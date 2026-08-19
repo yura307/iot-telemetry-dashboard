@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="uk" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise IoT SCADA | Telemetry Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Підключення нашого файлу CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg bg-panel mb-4 border-bottom-0 shadow-sm">
+        <div class="container-fluid px-4 py-1">
+            <a class="navbar-brand d-flex align-items-center text-white" href="#">
+                <i class="bi bi-cpu text-accent fs-3 me-2"></i>
+                <div>
+                    <h5 class="mb-0 fw-bold">PROMETHEUS-X1 <span class="badge bg-secondary ms-2" style="font-size: 0.5em;">BETA</span></h5>
+                    <small class="text-muted" style="font-size: 0.7em;">Industrial Telemetry Control Center</small>
+                </div>
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-success bg-opacity-10 text-success border border-success p-2 rounded-pill">
+                    <i class="bi bi-broadcast me-1"></i> Система Онлайн
+                </span>
+                <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-download me-1"></i> Експорт CSV</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4 pb-5">
+        <!-- KPI Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="bg-panel p-3 h-100 d-flex flex-column justify-content-between" id="kpi-vibro-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <span class="kpi-label"><i class="bi bi-activity text-primary me-1"></i> Пік. Вібрація</span>
+                        <i class="bi bi-exclamation-triangle-fill text-alert d-none" id="alert-icon"></i>
+                    </div>
+                    <div class="mt-2"><span class="kpi-value text-white" id="kpi-vibro">0.0</span> <span class="text-muted">мм/с</span></div>
+                    <div class="text-muted small mt-2"><i class="bi bi-arrow-up-right text-success"></i> +2.4% за годину</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="bg-panel p-3 h-100 d-flex flex-column justify-content-between">
+                    <span class="kpi-label"><i class="bi bi-volume-up text-warning me-1"></i> Сер. Шум</span>
+                    <div class="mt-2"><span class="kpi-value text-white" id="kpi-sound">0.0</span> <span class="text-muted">dB</span></div>
+                    <div class="text-muted small mt-2">У межах норми (до 85 dB)</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="bg-panel p-3 h-100 d-flex flex-column justify-content-between">
+                    <span class="kpi-label"><i class="bi bi-thermometer-half text-danger me-1"></i> Температура чипа</span>
+                    <div class="mt-2"><span class="kpi-value text-white" id="kpi-temp">42.5</span> <span class="text-muted">°C</span></div>
+                    <div class="text-muted small mt-2">Датчик: BME280_Node_1</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="bg-panel p-3 h-100 d-flex flex-column justify-content-between">
+                    <span class="kpi-label"><i class="bi bi-router text-info me-1"></i> Мережа (RSSI)</span>
+                    <div class="mt-2"><span class="kpi-value text-white" id="kpi-rssi">-68</span> <span class="text-muted">dBm</span></div>
+                    <div class="progress mt-2" style="height: 4px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: 80%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-8">
+                <div class="bg-panel p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="mb-0 fw-bold text-white"><i class="bi bi-graph-up text-primary me-2"></i>Спектральний аналіз вібрації (Реал-тайм)</h6>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary active">Live</button>
+                            <button class="btn btn-outline-secondary">1 Год</button>
+                            <button class="btn btn-outline-secondary">24 Год</button>
+                        </div>
+                    </div>
+                    <canvas id="mainVibroChart"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="bg-panel p-4 h-100 d-flex flex-column">
+                    <h6 class="mb-4 fw-bold text-white"><i class="bi bi-soundwave text-warning me-2"></i>Акустичний тиск</h6>
+                    <canvas id="soundRadarChart" class="flex-grow-1"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs and Devices -->
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="bg-panel p-4 h-100">
+                    <h6 class="mb-3 fw-bold text-white"><i class="bi bi-terminal text-success me-2"></i>Серверний Термінал (WebSocket Stream)</h6>
+                    <div class="log-console" id="logConsole">
+                        <div>[SYSTEM] Ініціалізація WebSocket з'єднання... OK</div>
+                        <div>[AUTH] Токен підтверджено. Права доступу: Admin.</div>
+                        <div>[STREAM] Очікування пакетів даних...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="bg-panel p-4 h-100">
+                    <h6 class="mb-3 fw-bold text-white"><i class="bi bi-hdd-network text-secondary me-2"></i>Активні Вузли</h6>
+                    <div class="list-group list-group-flush border-0">
+                        <div class="list-group-item bg-transparent px-0 border-secondary d-flex justify-content-between align-items-center">
+                            <div class="text-white small">
+                                <i class="bi bi-circle-fill text-success me-2" style="font-size: 8px;"></i>Верстат ЧПК (Ось X)
+                                <div class="text-muted" style="font-size: 0.8em; margin-left: 18px;">IP: 192.168.1.104 | Uptime: 4d 12h</div>
+                            </div>
+                            <i class="bi bi-battery-half text-warning"></i>
+                        </div>
+                        <div class="list-group-item bg-transparent px-0 border-secondary d-flex justify-content-between align-items-center">
+                            <div class="text-white small">
+                                <i class="bi bi-circle-fill text-success me-2" style="font-size: 8px;"></i>Мотор конвеєра
+                                <div class="text-muted" style="font-size: 0.8em; margin-left: 18px;">IP: 192.168.1.105 | Uptime: 1d 04h</div>
+                            </div>
+                            <i class="bi bi-battery-full text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-5">
+            <p class="text-muted small mb-0 text-uppercase" style="letter-spacing: 2px;">Прототип системи телеметрії</p>
+        </div>
+    </div>
+
+    <!-- Підключення нашого файлу скриптів -->
+    <script src="app.js"></script>
+</body>
+</html>

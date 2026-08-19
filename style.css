@@ -1,0 +1,60 @@
+body { 
+    background-color: #0f111a; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    overflow-x: hidden; 
+}
+
+.bg-panel { 
+    background-color: #1a1d27; 
+    border: 1px solid #2d3243; 
+    border-radius: 12px; 
+}
+
+.text-accent { color: #00e676; }
+.text-alert { color: #ff1744; }
+canvas { max-height: 280px; }
+
+.log-console { 
+    height: 150px; 
+    overflow-y: auto; 
+    background-color: #090a0f; 
+    color: #00e676; 
+    font-family: monospace; 
+    font-size: 0.85em; 
+    border-radius: 8px; 
+    padding: 10px; 
+    border: 1px solid #2d3243; 
+}
+
+.kpi-value { 
+    font-size: 2.5rem; 
+    font-weight: 700; 
+    line-height: 1; 
+}
+
+.kpi-label { 
+    font-size: 0.85rem; 
+    color: #8b949e; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+}
+
+.alert-flash { 
+    animation: flashAlert 1s infinite alternate; 
+}
+
+@keyframes flashAlert { 
+    from { 
+        background-color: rgba(255, 23, 68, 0.1); 
+        border-color: rgba(255, 23, 68, 0.5); 
+    } 
+    to { 
+        background-color: rgba(255, 23, 68, 0.3); 
+        border-color: #ff1744; 
+    } 
+}
+
+/* Custom Scrollbar for logs */
+.log-console::-webkit-scrollbar { width: 6px; }
+.log-console::-webkit-scrollbar-track { background: #090a0f; }
+.log-console::-webkit-scrollbar-thumb { background: #2d3243; border-radius: 3px; }
