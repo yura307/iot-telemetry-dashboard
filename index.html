@@ -6,13 +6,41 @@
     <title>Enterprise IoT SCADA | Telemetry Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
-    <!-- Підключення нашого файлу CSS -->
     <link rel="stylesheet" href="style.css">
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <!-- Екран авторизації (Оверлей) -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-card p-4 shadow-lg">
+            <div class="text-center mb-4">
+                <i class="bi bi-shield-lock text-accent" style="font-size: 3rem;"></i>
+                <h4 class="mt-2 text-white fw-bold">Система Авторизації</h4>
+                <p class="text-muted small">Введіть облікові дані адміністратора</p>
+            </div>
+            <form id="login-form">
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control bg-dark text-white border-secondary" id="username" placeholder="Логін" required autocomplete="off">
+                    <label for="username" class="text-muted">Логін (admin)</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="password" class="form-control bg-dark text-white border-secondary" id="password" placeholder="Пароль" required autocomplete="off">
+                    <label for="password" class="text-muted">Пароль (admin)</label>
+                </div>
+                <div id="login-error" class="text-danger small mb-3 d-none">
+                    <i class="bi bi-exclamation-circle me-1"></i> Невірний логін або пароль. Доступ заборонено.
+                </div>
+                <button type="submit" class="btn btn-outline-success w-100 py-2 fw-bold" id="login-btn">
+                    <span id="login-text">УВІЙТИ В СИСТЕМУ</span>
+                    <span id="login-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                </button>
+            </form>
+            <div class="text-center mt-4 text-secondary" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px;">
+                Restricted Access. Усі дії фіксуються.
+            </div>
+        </div>
+    </div>
+
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg bg-panel mb-4 border-bottom-0 shadow-sm">
         <div class="container-fluid px-4 py-1">
@@ -100,7 +128,6 @@
                     <h6 class="mb-3 fw-bold text-white"><i class="bi bi-terminal text-success me-2"></i>Серверний Термінал (WebSocket Stream)</h6>
                     <div class="log-console" id="logConsole">
                         <div>[SYSTEM] Ініціалізація WebSocket з'єднання... OK</div>
-                        <div>[AUTH] Токен підтверджено. Права доступу: Admin.</div>
                         <div>[STREAM] Очікування пакетів даних...</div>
                     </div>
                 </div>
@@ -133,7 +160,6 @@
         </div>
     </div>
 
-    <!-- Підключення нашого файлу скриптів -->
     <script src="app.js"></script>
 </body>
 </html>
