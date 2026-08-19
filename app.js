@@ -81,61 +81,91 @@ function addLog(msg, type = "INFO") {
     if(logConsole.childElementCount > 50) logConsole.removeChild(logConsole.firstChild);
 }
 
-setInterval(() => {
-    // Симуляція складної вібрації (кілька гармонік) + випадкові скачки
-    let vibro = Math.abs(Math.sin(t) * 30 + Math.cos(t * 3.5) * 15) + (Math.random() * 5); 
-    
-    // Штучний "пробій" показників кожні ~15 секунд
-    if (Math.random() > 0.95) {
-        vibro += 40 + Math.random() * 20;
-    }
+// --- ЛОГІКА АВТОРИЗАЦІЇ ---
+const loginOverlay = document.getElementById('login-overlay');
+const loginForm = document.getElementById('login-form');
+const loginError = document.getElementById('login-error');
+const loginBtn = document.getElementById('login-btn');
+const loginText = document.getElementById('login-text');
+const loginSpinner = document.getElementById('login-spinner');
 
-    const sound = 65 + (Math.random() * 15);
+loginForm.addEventListener('submit', function(e) {
+    e.preventDefault(); 
     
-    // Оновлення KPI
-    kpiVibro.innerText = vibro.toFixed(1);
-    kpiSound.innerText = sound.toFixed(1);
-    
-    // Дрібне коливання температури і сигналу
-    if (Math.random() > 0.7) kpiTemp.innerText = (42.0 + Math.random()).toFixed(1);
-    if (Math.random() > 0.9) kpiRssi.innerText = Math.floor(-75 + Math.random() * 15);
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
 
-    // Логіка тривоги (Alert)
-    if (vibro > 75) {
-        if (!isAlert) {
-            alertCard.classList.add('alert-flash');
-            alertIcon.classList.remove('d-none');
-            addLog(`КРИТИЧНА ВІБРАЦІЯ: ${vibro.toFixed(2)} мм/с (Поріг 75.0)`, "CRIT");
-            isAlert = true;
+    loginError.classList.add('d-none');
+    loginText.classList.add('d-none');
+    loginSpinner.classList.remove('d-none');
+    loginBtn.classList.add('disabled');
+
+    setTimeout(() => {
+        if (user === 'admin' && pass === 'admin') {
+            loginOverlay.classList.add('hidden');
+            setTimeout(() => loginOverlay.remove(), 600); 
+            
+            addLog(`[AUTH] Користувач 'admin' успішно авторизований.`, 'INFO');
+            addLog(`[STREAM] Відкриття захищеного WebSocket з'єднання...`, 'INFO');
+            
+            startSimulation(); 
+        } else {
+            loginError.classList.remove('d-none');
+            loginText.classList.remove('d-none');
+            loginSpinner.classList.add('d-none');
+            loginBtn.classList.remove('disabled');
         }
-    } else {
-        if (isAlert) {
-            alertCard.classList.remove('alert-flash');
-            alertIcon.classList.add('d-none');
-            addLog(`Вібрація стабілізувалась: ${vibro.toFixed(2)} мм/с`, "INFO");
-            isAlert = false;
+    }, 1500); 
+});
+
+// --- ЗАПУСК ДАНИХ (Викликається тільки після логіна) ---
+function startSimulation() {
+    setInterval(() => {
+        let vibro = Math.abs(Math.sin(t) * 30 + Math.cos(t * 3.5) * 15) + (Math.random() * 5); 
+        
+        if (Math.random() > 0.95) vibro += 40 + Math.random() * 20;
+
+        const sound = 65 + (Math.random() * 15);
+        
+        kpiVibro.innerText = vibro.toFixed(1);
+        kpiSound.innerText = sound.toFixed(1);
+        
+        if (Math.random() > 0.7) kpiTemp.innerText = (42.0 + Math.random()).toFixed(1);
+        if (Math.random() > 0.9) kpiRssi.innerText = Math.floor(-75 + Math.random() * 15);
+
+        if (vibro > 75) {
+            if (!isAlert) {
+                alertCard.classList.add('alert-flash');
+                alertIcon.classList.remove('d-none');
+                addLog(`КРИТИЧНА ВІБРАЦІЯ: ${vibro.toFixed(2)} мм/с (Поріг 75.0)`, "CRIT");
+                isAlert = true;
+            }
+        } else {
+            if (isAlert) {
+                alertCard.classList.remove('alert-flash');
+                alertIcon.classList.add('d-none');
+                addLog(`Вібрація стабілізувалась: ${vibro.toFixed(2)} мм/с`, "INFO");
+                isAlert = false;
+            }
         }
-    }
 
-    // Оновлення графіка вібрації
-    const timeStr = new Date().getSeconds();
-    mainVibroChart.data.labels.shift();
-    mainVibroChart.data.labels.push(timeStr);
-    mainVibroChart.data.datasets[0].data.shift();
-    mainVibroChart.data.datasets[0].data.push(vibro);
-    mainVibroChart.update();
+        const timeStr = new Date().getSeconds();
+        mainVibroChart.data.labels.shift();
+        mainVibroChart.data.labels.push(timeStr);
+        mainVibroChart.data.datasets[0].data.shift();
+        mainVibroChart.data.datasets[0].data.push(vibro);
+        mainVibroChart.update();
 
-    // Оновлення спектрального графіка (анімація стовпчиків)
-    soundRadarChart.data.datasets[0].data = soundRadarChart.data.datasets[0].data.map(val => {
-        let newVal = val + (Math.random() * 10 - 5);
-        return Math.max(20, Math.min(100, newVal)); // тримаємо в межах 20-100
-    });
-    soundRadarChart.update();
+        soundRadarChart.data.datasets[0].data = soundRadarChart.data.datasets[0].data.map(val => {
+            let newVal = val + (Math.random() * 10 - 5);
+            return Math.max(20, Math.min(100, newVal));
+        });
+        soundRadarChart.update();
 
-    // Фоновий лог
-    if (Math.random() > 0.85 && !isAlert) {
-        addLog(`Отримано пакет IoT_DATA_PAYLOAD (64 bytes) від Node_1`);
-    }
+        if (Math.random() > 0.85 && !isAlert) {
+            addLog(`Отримано пакет IoT_DATA_PAYLOAD (64 bytes) від Node_1`);
+        }
 
-    t += 0.2;
-}, 300);
+        t += 0.2;
+    }, 300);
+}
