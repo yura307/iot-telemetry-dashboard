@@ -59,8 +59,9 @@
                         <label for="reg-username" class="text-muted">Email або Телефон</label>
                     </div>
                     <div class="form-floating mb-1">
-                        <input type="password" class="form-control bg-dark text-white border-secondary" id="reg-password" placeholder="Пароль" required autocomplete="new-password">
-                        <label for="reg-password" class="text-muted">Створіть пароль</label>
+                        <!-- Змінено мінімальну довжину на 8 та текст підказки -->
+                        <input type="password" class="form-control bg-dark text-white border-secondary" id="reg-password" placeholder="Пароль" required autocomplete="new-password" minlength="8">
+                        <label for="reg-password" class="text-muted">Створіть пароль (A-z, 0-9, !@#)</label>
                     </div>
                     
                     <!-- Індикатор надійності пароля -->
