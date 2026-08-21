@@ -90,7 +90,7 @@ document.getElementById('show-login').addEventListener('click', (e) => {
     loginSection.classList.remove('d-none');
 });
 
-// АНАЛІЗ НАДІЙНОСТІ ПАРОЛЯ В РЕАЛЬНОМУ ЧАСІ
+// АНАЛІЗ НАДІЙНОСТІ ПАРОЛЯ В РЕАЛЬНОМУ ЧАСІ (Строгі правила)
 regPasswordInput.addEventListener('input', function() {
     const val = this.value;
     
@@ -102,34 +102,41 @@ regPasswordInput.addEventListener('input', function() {
         return;
     }
 
-    let strength = 0;
-    
-    // Критерії складності
-    if (val.length >= 6) strength += 1; 
-    if (val.length >= 8) strength += 1; 
-    if (/[A-Z]/.test(val) && /[a-z]/.test(val)) strength += 1; 
-    if (/[0-9]/.test(val)) strength += 1; 
-    if (/[^A-Za-z0-9]/.test(val)) strength += 1; 
+    // Регулярні вирази для перевірки умов
+    const hasUpper = /[A-Z]/.test(val);          // Хоча б одна велика літера
+    const hasNumber = /[0-9]/.test(val);         // Хоча б одна цифра
+    const hasSpecial = /[^A-Za-z0-9]/.test(val); // Хоча б один спецсимвол
+    const isLongEnough = val.length >= 8;        // Мінімум 8 символів
+
+    // Збираємо масив того, чого бракує
+    let missing = [];
+    if (!isLongEnough) missing.push('8 символів');
+    if (!hasUpper) missing.push('велику літеру');
+    if (!hasNumber) missing.push('цифру');
+    if (!hasSpecial) missing.push('спецсимвол (!@#)');
 
     // Візуалізація результату
-    if (val.length < 6) {
+    if (missing.length >= 3) {
+        // Найслабший рівень
         pwdStrengthBar.style.width = '33%';
         pwdStrengthBar.className = 'progress-bar bg-danger';
-        pwdStrengthText.innerText = 'Слабкий (мінімум 6 символів)';
+        pwdStrengthText.innerText = 'Слабкий: додайте ' + missing[0];
         pwdStrengthText.className = 'fw-bold text-danger';
-        registerBtn.disabled = true; 
-    } else if (strength < 4) {
+        registerBtn.disabled = true; // Забороняємо реєстрацію
+    } else if (missing.length > 0) {
+        // Середній рівень (щось одне чи два ще не виконано)
         pwdStrengthBar.style.width = '66%';
         pwdStrengthBar.className = 'progress-bar bg-warning';
-        pwdStrengthText.innerText = 'Середній (жовтий)';
+        pwdStrengthText.innerText = 'Бракує: ' + missing.join(', ');
         pwdStrengthText.className = 'fw-bold text-warning';
-        registerBtn.disabled = false;
+        registerBtn.disabled = true; // Забороняємо реєстрацію, бо правила строгі
     } else {
+        // Всі умови виконано
         pwdStrengthBar.style.width = '100%';
         pwdStrengthBar.className = 'progress-bar bg-success';
-        pwdStrengthText.innerText = 'Високий (зелений)';
+        pwdStrengthText.innerText = 'Надійний (Всі вимоги виконано)';
         pwdStrengthText.className = 'fw-bold text-success';
-        registerBtn.disabled = false;
+        registerBtn.disabled = false; // ТІЛЬКИ ТЕПЕР дозволяємо реєстрацію
     }
 });
 
