@@ -8,13 +8,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <!-- Bootstrap Bundle JS (Для модальних вікон та меню) -->
+    <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Наш CSS -->
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -40,23 +36,17 @@
                         <i class="bi bi-eye-slash pwd-toggle" id="toggle-login-pwd"></i>
                     </div>
                     
-                    <!-- Блок: Запам'ятати мене -->
                     <div class="form-check text-start mb-3">
                         <input class="form-check-input bg-dark border-secondary" type="checkbox" id="remember-me">
-                        <label class="form-check-label text-muted small user-select-none" for="remember-me" style="cursor: pointer;">
-                            Запам'ятати мої дані
-                        </label>
+                        <label class="form-check-label text-muted small user-select-none" for="remember-me" style="cursor: pointer;">Запам'ятати мої дані</label>
                     </div>
 
-                    <div id="login-error" class="text-danger small mb-3 d-none">
-                        <i class="bi bi-exclamation-circle me-1"></i> Невірний логін або пароль.
-                    </div>
-                    <div id="login-success-msg" class="text-success small mb-3 d-none">
-                        <i class="bi bi-check-circle me-1"></i> Обліковий запис створено! Тепер увійдіть.
-                    </div>
+                    <div id="login-error" class="text-danger small mb-3 d-none"><i class="bi bi-exclamation-circle me-1"></i> Невірний логін або пароль.</div>
+                    <div id="login-success-msg" class="text-success small mb-3 d-none"><i class="bi bi-check-circle me-1"></i> Обліковий запис створено! Увійдіть.</div>
+                    
                     <button type="submit" class="btn btn-outline-success w-100 py-2 fw-bold mb-3" id="login-btn">
                         <span id="login-text">УВІЙТИ В СИСТЕМУ</span>
-                        <span id="login-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <span id="login-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
                     </button>
                     <div class="text-center mt-2">
                         <a href="#" id="show-register" class="text-accent text-decoration-none small">Створити обліковий запис оператора</a>
@@ -98,17 +88,35 @@
                         <i class="bi bi-eye-slash pwd-toggle" id="toggle-reg-pwd-confirm"></i>
                     </div>
                     
-                    <div id="reg-error" class="text-danger small mb-3 d-none">
-                        <i class="bi bi-exclamation-circle me-1"></i> Паролі не співпадають!
-                    </div>
+                    <div id="reg-error" class="text-danger small mb-3 d-none"><i class="bi bi-exclamation-circle me-1"></i> Паролі не співпадають!</div>
+                    
                     <button type="submit" class="btn btn-outline-primary w-100 py-2 fw-bold mb-3" id="register-btn" disabled>
-                        <span id="register-text">ЗАРЕЄСТРУВАТИ</span>
-                        <span id="register-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <span id="register-text">ДАЛІ</span>
+                        <span id="register-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
                     </button>
                     <div class="text-center mt-2">
                         <a href="#" id="show-login" class="text-secondary text-decoration-none small"><i class="bi bi-arrow-left"></i> Повернутися до входу</a>
                     </div>
                 </form>
+            </div>
+
+            <!-- НОВИЙ БЛОК: Підтвердження коду (ОТP) -->
+            <div id="otp-section" class="d-none">
+                <div class="text-center mb-4">
+                    <i class="bi bi-chat-dots text-warning" style="font-size: 3rem;"></i>
+                    <h4 class="mt-2 text-white fw-bold">Підтвердження</h4>
+                    <p class="text-muted small" id="otp-desc">Введіть 6-значний код.</p>
+                </div>
+                <div class="input-group mb-3 px-4">
+                    <input type="text" class="form-control bg-dark text-white border-secondary text-center fs-4 letter-spacing-2" placeholder="000000" maxlength="6" id="otp-input" autocomplete="off">
+                </div>
+                <div id="otp-error" class="text-danger small mb-3 text-center d-none">
+                    <i class="bi bi-exclamation-circle me-1"></i> Невірний код! Спробуйте ще раз.
+                </div>
+                <button class="btn btn-warning w-100 py-2 fw-bold mb-3" id="verify-otp-btn">ПІДТВЕРДИТИ КОД</button>
+                <div class="text-center mt-2">
+                    <a href="#" id="back-to-reg-from-otp" class="text-secondary text-decoration-none small"><i class="bi bi-arrow-left"></i> Назад до реєстрації</a>
+                </div>
             </div>
 
             <div class="text-center mt-4 text-secondary" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px;">
@@ -117,7 +125,7 @@
         </div>
     </div>
 
-    <!-- Navbar -->
+    <!-- Навбар та Графіки (Скорочено для зручності читання, залиште свій старий код тут) -->
     <nav class="navbar navbar-expand-lg bg-panel mb-4 border-bottom-0 shadow-sm">
         <div class="container-fluid px-4 py-1">
             <a class="navbar-brand d-flex align-items-center text-white" href="#">
@@ -131,8 +139,6 @@
                 <span class="badge bg-success bg-opacity-10 text-success border border-success p-2 rounded-pill d-none d-md-inline-block">
                     <i class="bi bi-broadcast me-1"></i> Система Онлайн
                 </span>
-                
-                <!-- Блок профілю користувача з Випадаючим меню -->
                 <div id="user-profile-menu" class="d-none align-items-center border-start border-secondary ps-3 ms-1 dropdown">
                     <div class="text-end me-2 d-none d-sm-block">
                         <div class="text-white small fw-bold lh-1" id="nav-username">Admin</div>
@@ -171,29 +177,21 @@
         <div class="text-center mt-5"><p class="text-muted small mb-0 text-uppercase" style="letter-spacing: 2px;">Прототип системи телеметрії</p></div>
     </div>
 
-    <!-- МОДАЛЬНЕ ВІКНО НАЛАШТУВАНЬ ПРОФІЛЮ -->
+    <!-- Модальне вікно профілю (залиште тут свій старий код вікна профілю) -->
     <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <!-- ... Весь код модального вікна профілю з минулого кроку ... -->
+         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-panel text-white">
                 <div class="modal-header border-secondary">
                     <h5 class="modal-title fw-bold"><i class="bi bi-person-bounding-box me-2 text-primary"></i>Профіль Оператора</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-0">
-                    <!-- Вкладки (Tabs) -->
                     <ul class="nav nav-tabs border-secondary px-3 pt-2" id="profileTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active text-white" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">Особисті дані</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link text-white" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">Безпека</button>
-                        </li>
+                        <li class="nav-item" role="presentation"><button class="nav-link active text-white" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">Особисті дані</button></li>
+                        <li class="nav-item" role="presentation"><button class="nav-link text-white" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">Безпека</button></li>
                     </ul>
-                    
-                    <!-- Вміст вкладок -->
                     <div class="tab-content p-4" id="profileTabsContent">
-                        
-                        <!-- Вкладка 1: Особисті Дані -->
                         <div class="tab-pane fade show active" id="general" role="tabpanel">
                             <form id="profile-details-form">
                                 <div class="mb-3">
@@ -208,47 +206,47 @@
                             </form>
                             <div id="profile-save-msg" class="text-success small mt-2 d-none text-center"><i class="bi bi-check-circle me-1"></i>Дані збережено успішно!</div>
                         </div>
-
-                        <!-- Вкладка 2: Безпека та 2FA -->
                         <div class="tab-pane fade" id="security" role="tabpanel">
                             <div class="d-flex justify-content-between align-items-center mb-4 p-3 border border-secondary rounded bg-dark">
-                                <div>
-                                    <h6 class="mb-0 fw-bold">Двофакторна автентифікація (2FA)</h6>
-                                    <small class="text-muted">Захистіть свій обліковий запис</small>
-                                </div>
-                                <div class="form-check form-switch fs-4 mb-0">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="tfa-switch">
-                                </div>
+                                <div><h6 class="mb-0 fw-bold">Двофакторна автентифікація (2FA)</h6><small class="text-muted">Захистіть свій обліковий запис</small></div>
+                                <div class="form-check form-switch fs-4 mb-0"><input class="form-check-input" type="checkbox" role="switch" id="tfa-switch"></div>
                             </div>
-
-                            <!-- Прихований блок налаштування 2FA -->
                             <div id="tfa-setup-block" class="d-none text-center">
                                 <p class="small text-muted mb-3">Відскануйте цей QR-код у додатку Google Authenticator та введіть код нижче:</p>
                                 <div class="bg-white p-2 d-inline-block rounded mb-3">
                                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=EnterpriseSCADA_SecureLogin" alt="QR Code" width="120" height="120">
                                 </div>
-                                <div class="input-group mb-3 px-4">
-                                    <input type="text" class="form-control bg-dark text-white border-secondary text-center fs-4 letter-spacing-2" placeholder="0 0 0 0 0 0" maxlength="6" id="tfa-code-input">
-                                </div>
+                                <div class="input-group mb-3 px-4"><input type="text" class="form-control bg-dark text-white border-secondary text-center fs-4 letter-spacing-2" placeholder="0 0 0 0 0 0" maxlength="6" id="tfa-code-input"></div>
                                 <button class="btn btn-outline-warning w-100" id="tfa-verify-btn">Підтвердити 2FA</button>
                                 <div id="tfa-success-msg" class="text-success small mt-2 d-none"><i class="bi bi-shield-check me-1"></i>2FA успішно активовано!</div>
                             </div>
-
-                            <!-- НОВИЙ БЛОК: Небезпечна зона (Видалення акаунту) -->
                             <div class="mt-5 border-top border-danger pt-4">
                                 <h6 class="text-danger fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>Небезпечна зона</h6>
-                                <p class="small text-muted mb-3">Видалення облікового запису є незворотнім процесом. Усі ваші налаштування будуть стерті.</p>
+                                <p class="small text-muted mb-3">Видалення облікового запису є незворотнім процесом.</p>
                                 <button class="btn btn-outline-danger w-100" id="delete-account-btn">Видалити мій акаунт</button>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Наш JS -->
+
+    <!-- НОВИЙ БЛОК: Спливаюче сповіщення (Push Notification Simulator) -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 10500;">
+        <div id="mockNotification" class="toast bg-dark text-white border-secondary shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-panel text-white border-secondary">
+                <i id="notif-icon" class="bi me-2 fs-5"></i>
+                <strong class="me-auto" id="notif-title">Сповіщення</strong>
+                <small class="text-muted">Щойно</small>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body fs-6" id="notif-body">
+                <!-- Текст сповіщення генерується в JS -->
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
