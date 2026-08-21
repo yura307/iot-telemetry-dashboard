@@ -3,7 +3,7 @@
 A professional, real-time frontend dashboard designed for monitoring industrial IoT sensors (vibration, acoustics, temperature). This project serves as a high-fidelity prototype demonstrating modern SCADA (Supervisory Control and Data Acquisition) interface design, client-side state management, and real-time data visualization.
 
 ## Live Demo
-*(Insert your Render / GitHub Pages / Netlify link here)*
+https://yura307.github.io/iot-telemetry-dashboard/
 
 ## Key Features
 
