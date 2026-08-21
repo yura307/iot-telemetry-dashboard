@@ -1,3 +1,4 @@
+// --- Ініціалізація графіків ---
 Chart.defaults.color = '#8b949e';
 Chart.defaults.borderColor = '#2d3243';
 
@@ -38,7 +39,7 @@ function addLog(msg, type = "INFO") {
     if(logConsole.childElementCount > 50) logConsole.removeChild(logConsole.firstChild);
 }
 
-// Функції паролів
+// --- Функції паролів (Показати/Приховати) ---
 function togglePasswordVisibility(inputId, iconId) {
     const input = document.getElementById(inputId);
     const icon = document.getElementById(iconId);
@@ -49,7 +50,6 @@ document.getElementById('toggle-login-pwd').addEventListener('click', () => togg
 document.getElementById('toggle-reg-pwd').addEventListener('click', () => togglePasswordVisibility('reg-password', 'toggle-reg-pwd'));
 document.getElementById('toggle-reg-pwd-confirm').addEventListener('click', () => togglePasswordVisibility('reg-password-confirm', 'toggle-reg-pwd-confirm'));
 
-// Логіка Авторизації
 const loginOverlay = document.getElementById('login-overlay');
 const loginSection = document.getElementById('login-section');
 const registerSection = document.getElementById('register-section');
@@ -64,7 +64,18 @@ const registerBtn = document.getElementById('register-btn');
 document.getElementById('show-register').addEventListener('click', (e) => { e.preventDefault(); loginSection.classList.add('d-none'); registerSection.classList.remove('d-none'); });
 document.getElementById('show-login').addEventListener('click', (e) => { e.preventDefault(); registerSection.classList.add('d-none'); loginSection.classList.remove('d-none'); });
 
-// Надійність пароля
+// --- ПЕРЕВІРКА "ЗАПАМ'ЯТАТИ МЕНЕ" ПРИ ЗАВАНТАЖЕННІ СТОРІНКИ ---
+window.addEventListener('DOMContentLoaded', () => {
+    const savedLogin = localStorage.getItem('scada_remembered_user');
+    const savedPass = localStorage.getItem('scada_remembered_pass');
+    if (savedLogin && savedPass) {
+        document.getElementById('username').value = savedLogin;
+        document.getElementById('password').value = savedPass;
+        document.getElementById('remember-me').checked = true;
+    }
+});
+
+// --- Надійність пароля при реєстрації ---
 regPasswordInput.addEventListener('input', function() {
     const val = this.value;
     if (val.length > 0) { pwdStrengthContainer.classList.remove('d-none'); } else { pwdStrengthContainer.classList.add('d-none'); registerBtn.disabled = true; return; }
@@ -78,7 +89,7 @@ regPasswordInput.addEventListener('input', function() {
     else { pwdStrengthBar.style.width = '100%'; pwdStrengthBar.className = 'progress-bar bg-success'; pwdStrengthText.innerText = 'Надійний (Всі вимоги виконано)'; pwdStrengthText.className = 'fw-bold text-success'; registerBtn.disabled = false; }
 });
 
-// Реєстрація
+// --- Реєстрація ---
 registerForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const user = document.getElementById('reg-username').value;
@@ -93,7 +104,7 @@ registerForm.addEventListener('submit', function(e) {
 
     setTimeout(() => {
         localStorage.setItem('scada_user', user); localStorage.setItem('scada_pass', pass);
-        // Скидаємо профільні дані для нового користувача
+        // Скидаємо профіль та 2FA для нового юзера
         localStorage.removeItem('scada_profile_name'); localStorage.removeItem('scada_profile_role'); localStorage.removeItem('scada_2fa_enabled');
         
         registerForm.reset(); pwdStrengthContainer.classList.add('d-none');
@@ -103,11 +114,13 @@ registerForm.addEventListener('submit', function(e) {
     }, 1000);
 });
 
-// Вхід
+// --- Вхід ---
 loginForm.addEventListener('submit', function(e) {
     e.preventDefault(); 
     const inputUser = document.getElementById('username').value;
     const inputPass = document.getElementById('password').value;
+    const rememberMe = document.getElementById('remember-me').checked;
+
     const validUser = localStorage.getItem('scada_user') || 'admin';
     const validPass = localStorage.getItem('scada_pass') || 'admin';
 
@@ -119,7 +132,16 @@ loginForm.addEventListener('submit', function(e) {
 
     setTimeout(() => {
         if ((inputUser === validUser && inputPass === validPass) || (inputUser === 'admin' && inputPass === 'admin')) {
-            // Оновлюємо дані в навбарі з localStorage (якщо є)
+            
+            // Логіка "Запам'ятати мене"
+            if (rememberMe) {
+                localStorage.setItem('scada_remembered_user', inputUser);
+                localStorage.setItem('scada_remembered_pass', inputPass);
+            } else {
+                localStorage.removeItem('scada_remembered_user');
+                localStorage.removeItem('scada_remembered_pass');
+            }
+
             const savedName = localStorage.getItem('scada_profile_name') || inputUser;
             const savedRole = localStorage.getItem('scada_profile_role') || 'Черговий оператор';
             
@@ -132,13 +154,12 @@ loginForm.addEventListener('submit', function(e) {
             setTimeout(() => loginOverlay.style.display = 'none', 600); 
             addLog(`[AUTH] Оператор '${inputUser}' успішно авторизований.`, 'INFO');
             
-            // Якщо 2FA увімкнено (фейкове повідомлення для солідності)
             if(localStorage.getItem('scada_2fa_enabled') === 'true') { addLog(`[SECURITY] 2FA верифікацію пройдено успішно.`, 'INFO'); }
             
             addLog(`[STREAM] Відкриття захищеного WebSocket з'єднання...`, 'INFO');
             startSimulation(); 
             
-            // Завантажуємо дані у форму профілю
+            // Наповнюємо форму профілю даними
             document.getElementById('profile-name').value = localStorage.getItem('scada_profile_name') || '';
             document.getElementById('profile-role').value = localStorage.getItem('scada_profile_role') || '';
             if(localStorage.getItem('scada_2fa_enabled') === 'true') {
@@ -157,11 +178,10 @@ loginForm.addEventListener('submit', function(e) {
     }, 1500); 
 });
 
-// Вихід
+// --- Вихід ---
 document.getElementById('logout-btn').addEventListener('click', function() { location.reload(); });
 
-// --- ЛОГІКА ПРОФІЛЮ ТА 2FA (Модальне вікно) ---
-// Збереження особистих даних
+// --- Логіка Профілю та 2FA ---
 document.getElementById('profile-details-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const newName = document.getElementById('profile-name').value;
@@ -170,7 +190,6 @@ document.getElementById('profile-details-form').addEventListener('submit', funct
     if(newName) localStorage.setItem('scada_profile_name', newName);
     if(newRole) localStorage.setItem('scada_profile_role', newRole);
     
-    // Миттєво оновлюємо Navbar
     document.getElementById('nav-username').innerText = newName || localStorage.getItem('scada_user') || 'Admin';
     document.getElementById('nav-role').innerText = newRole || 'Черговий оператор';
     
@@ -178,35 +197,25 @@ document.getElementById('profile-details-form').addEventListener('submit', funct
     setTimeout(() => document.getElementById('profile-save-msg').classList.add('d-none'), 3000);
 });
 
-// Увімкнення 2FA тумблера
 document.getElementById('tfa-switch').addEventListener('change', function() {
     const setupBlock = document.getElementById('tfa-setup-block');
-    if (this.checked) {
-        setupBlock.classList.remove('d-none');
-    } else {
-        setupBlock.classList.add('d-none');
-        localStorage.setItem('scada_2fa_enabled', 'false');
-        document.getElementById('tfa-success-msg').classList.add('d-none');
-        document.getElementById('tfa-code-input').disabled = false;
-        document.getElementById('tfa-code-input').value = '';
-        document.getElementById('tfa-verify-btn').classList.remove('d-none');
+    if (this.checked) { setupBlock.classList.remove('d-none'); } 
+    else {
+        setupBlock.classList.add('d-none'); localStorage.setItem('scada_2fa_enabled', 'false');
+        document.getElementById('tfa-success-msg').classList.add('d-none'); document.getElementById('tfa-code-input').disabled = false;
+        document.getElementById('tfa-code-input').value = ''; document.getElementById('tfa-verify-btn').classList.remove('d-none');
     }
 });
 
-// Підтвердження коду 2FA
 document.getElementById('tfa-verify-btn').addEventListener('click', function() {
     const code = document.getElementById('tfa-code-input').value;
     if(code.length === 6) {
         localStorage.setItem('scada_2fa_enabled', 'true');
-        this.classList.add('d-none'); // Ховаємо кнопку
-        document.getElementById('tfa-code-input').disabled = true; // Блокуємо поле
-        document.getElementById('tfa-success-msg').classList.remove('d-none'); // Показуємо успіх
-    } else {
-        alert("Будь ласка, введіть 6-значний код.");
-    }
+        this.classList.add('d-none'); document.getElementById('tfa-code-input').disabled = true; document.getElementById('tfa-success-msg').classList.remove('d-none');
+    } else { alert("Будь ласка, введіть 6-значний код."); }
 });
 
-// Симуляція
+// --- Симуляція Даних ---
 function startSimulation() {
     simulationInterval = setInterval(() => {
         let vibro = Math.abs(Math.sin(t) * 30 + Math.cos(t * 3.5) * 15) + (Math.random() * 5); 
