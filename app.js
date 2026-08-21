@@ -43,7 +43,6 @@ let activeUser = null;
 const loginOverlay = document.getElementById('login-overlay');
 const loginSection = document.getElementById('login-section');
 const registerSection = document.getElementById('register-section');
-const otpSection = document.getElementById('otp-section'); 
 const loginForm = document.getElementById('login-form');
 const registerForm = document.getElementById('register-form');
 const regUsernameInput = document.getElementById('reg-username');
@@ -55,7 +54,6 @@ const registerBtn = document.getElementById('register-btn');
 
 document.getElementById('show-register').addEventListener('click', (e) => { e.preventDefault(); loginSection.classList.add('d-none'); registerSection.classList.remove('d-none'); });
 document.getElementById('show-login').addEventListener('click', (e) => { e.preventDefault(); registerSection.classList.add('d-none'); loginSection.classList.remove('d-none'); });
-document.getElementById('back-to-reg-from-otp').addEventListener('click', (e) => { e.preventDefault(); otpSection.classList.add('d-none'); registerSection.classList.remove('d-none'); });
 
 window.addEventListener('DOMContentLoaded', () => {
     const savedLogin = localStorage.getItem('scada_remembered_user');
@@ -93,9 +91,7 @@ regPasswordInput.addEventListener('input', function() {
     else { pwdStrengthBar.style.width = '100%'; pwdStrengthBar.className = 'progress-bar bg-success'; pwdStrengthText.innerText = 'Надійний (Всі вимоги виконано)'; pwdStrengthText.className = 'fw-bold text-success'; registerBtn.disabled = false; }
 });
 
-let tempRegUser = ""; let tempRegPass = ""; let generatedOTP = "";
-
-// --- РЕЄСТРАЦІЯ ТА ВІДПРАВКА OTP ---
+// --- МИТТЄВА РЕЄСТРАЦІЯ ---
 registerForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const user = regUsernameInput.value.trim();
@@ -112,57 +108,22 @@ registerForm.addEventListener('submit', function(e) {
     registerBtn.classList.add('disabled');
 
     setTimeout(() => {
-        tempRegUser = user;
-        tempRegPass = pass;
+        // Миттєво створюємо користувача в базі
+        dbUsers[user] = { pass: pass, name: '', role: '', tfa: false };
+        localStorage.setItem('scada_users', JSON.stringify(dbUsers));
         
-        // Генеруємо код доступу
-        generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        registerSection.classList.add('d-none');
-        otpSection.classList.remove('d-none');
+        // Очищаємо форму і перемикаємося на екран входу
+        registerForm.reset(); 
+        pwdStrengthContainer.classList.add('d-none');
         document.getElementById('register-text').classList.remove('d-none');
         document.getElementById('register-spinner').classList.add('d-none');
         registerBtn.classList.remove('disabled');
 
-        // ВИКЛИК УНІВЕРСАЛЬНОГО СПОВІЩЕННЯ
-        setTimeout(() => {
-            const notifBody = document.getElementById('notif-body');
-            notifBody.innerHTML = `Системний код доступу: <b class="fs-4 ms-2 text-warning">${generatedOTP}</b>`;
-            
-            const toastElement = document.getElementById('mockNotification');
-            const toast = new bootstrap.Toast(toastElement, { autohide: false });
-            toast.show();
-        }, 1500);
-
-    }, 800);
-});
-
-// --- ПІДТВЕРДЖЕННЯ OTP ---
-document.getElementById('verify-otp-btn').addEventListener('click', function() {
-    const inputOTP = document.getElementById('otp-input').value.trim();
-    const otpError = document.getElementById('otp-error');
-    
-    if(inputOTP === generatedOTP) {
-        otpError.classList.add('d-none');
-        dbUsers[tempRegUser] = { pass: tempRegPass, name: '', role: '', tfa: false };
-        localStorage.setItem('scada_users', JSON.stringify(dbUsers));
-        
-        const toastEl = document.getElementById('mockNotification');
-        const toast = bootstrap.Toast.getInstance(toastEl);
-        if(toast) toast.hide();
-
-        registerForm.reset(); 
-        document.getElementById('otp-input').value = "";
-        pwdStrengthContainer.classList.add('d-none');
-        
-        otpSection.classList.add('d-none'); 
+        registerSection.classList.add('d-none'); 
         loginSection.classList.remove('d-none');
         document.getElementById('login-success-msg').classList.remove('d-none'); 
-    } else {
-        otpError.classList.remove('d-none');
-    }
+    }, 1000);
 });
-
 
 // --- ВХІД З БАЗИ ДАНИХ ---
 loginForm.addEventListener('submit', function(e) {
