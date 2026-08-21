@@ -14,10 +14,8 @@ const mainVibroChart = new Chart(ctxVibro, {
     data: { 
         labels: Array(30).fill(''), 
         datasets: [{ 
-            label: 'Амплітуда (мм/с)',
-            data: Array(30).fill(0), 
-            borderColor: '#0d6efd', 
-            backgroundColor: gradientVibro,
+            label: 'Амплітуда (мм/с)', data: Array(30).fill(0), 
+            borderColor: '#0d6efd', backgroundColor: gradientVibro,
             borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0, pointHitRadius: 10
         }] 
     },
@@ -65,32 +63,21 @@ function addLog(msg, type = "INFO") {
     if(logConsole.childElementCount > 50) logConsole.removeChild(logConsole.firstChild);
 }
 
-// --- ЛОГІКА АВТОРИЗАЦІЇ ТА РЕЄСТРАЦІЇ ---
+// --- ЛОГІКА АВТОРИЗАЦІЇ, РЕЄСТРАЦІЇ ТА НАДІЙНОСТІ ПАРОЛЯ ---
 const loginOverlay = document.getElementById('login-overlay');
-
-// Секції
 const loginSection = document.getElementById('login-section');
 const registerSection = document.getElementById('register-section');
 
-// Форми
 const loginForm = document.getElementById('login-form');
 const registerForm = document.getElementById('register-form');
 
-// Повідомлення
-const loginError = document.getElementById('login-error');
-const loginSuccessMsg = document.getElementById('login-success-msg');
-const regError = document.getElementById('reg-error');
-
-// Кнопки
-const loginBtn = document.getElementById('login-btn');
-const loginText = document.getElementById('login-text');
-const loginSpinner = document.getElementById('login-spinner');
-
+const regPasswordInput = document.getElementById('reg-password');
+const pwdStrengthContainer = document.getElementById('pwd-strength-container');
+const pwdStrengthBar = document.getElementById('pwd-strength-bar');
+const pwdStrengthText = document.getElementById('pwd-strength-text');
 const registerBtn = document.getElementById('register-btn');
-const registerText = document.getElementById('register-text');
-const registerSpinner = document.getElementById('register-spinner');
 
-// Перемикання між вікнами Входу і Реєстрації
+// Логіка перемикання вікон
 document.getElementById('show-register').addEventListener('click', (e) => {
     e.preventDefault();
     loginSection.classList.add('d-none');
@@ -103,44 +90,82 @@ document.getElementById('show-login').addEventListener('click', (e) => {
     loginSection.classList.remove('d-none');
 });
 
+// АНАЛІЗ НАДІЙНОСТІ ПАРОЛЯ В РЕАЛЬНОМУ ЧАСІ
+regPasswordInput.addEventListener('input', function() {
+    const val = this.value;
+    
+    if (val.length > 0) {
+        pwdStrengthContainer.classList.remove('d-none');
+    } else {
+        pwdStrengthContainer.classList.add('d-none');
+        registerBtn.disabled = true;
+        return;
+    }
+
+    let strength = 0;
+    
+    // Критерії складності
+    if (val.length >= 6) strength += 1; 
+    if (val.length >= 8) strength += 1; 
+    if (/[A-Z]/.test(val) && /[a-z]/.test(val)) strength += 1; 
+    if (/[0-9]/.test(val)) strength += 1; 
+    if (/[^A-Za-z0-9]/.test(val)) strength += 1; 
+
+    // Візуалізація результату
+    if (val.length < 6) {
+        pwdStrengthBar.style.width = '33%';
+        pwdStrengthBar.className = 'progress-bar bg-danger';
+        pwdStrengthText.innerText = 'Слабкий (мінімум 6 символів)';
+        pwdStrengthText.className = 'fw-bold text-danger';
+        registerBtn.disabled = true; 
+    } else if (strength < 4) {
+        pwdStrengthBar.style.width = '66%';
+        pwdStrengthBar.className = 'progress-bar bg-warning';
+        pwdStrengthText.innerText = 'Середній (жовтий)';
+        pwdStrengthText.className = 'fw-bold text-warning';
+        registerBtn.disabled = false;
+    } else {
+        pwdStrengthBar.style.width = '100%';
+        pwdStrengthBar.className = 'progress-bar bg-success';
+        pwdStrengthText.innerText = 'Високий (зелений)';
+        pwdStrengthText.className = 'fw-bold text-success';
+        registerBtn.disabled = false;
+    }
+});
+
 // Обробка форми Реєстрації
 registerForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    
     const user = document.getElementById('reg-username').value;
     const pass = document.getElementById('reg-password').value;
     const passConfirm = document.getElementById('reg-password-confirm').value;
+    const regError = document.getElementById('reg-error');
 
-    // Перевірка на співпадіння паролів
     if (pass !== passConfirm) {
         regError.classList.remove('d-none');
         return;
     }
     
     regError.classList.add('d-none');
-    registerText.classList.add('d-none');
-    registerSpinner.classList.remove('d-none');
+    document.getElementById('register-text').classList.add('d-none');
+    document.getElementById('register-spinner').classList.remove('d-none');
     registerBtn.classList.add('disabled');
 
-    // Імітуємо відправку на сервер (затримка 1 секунда)
     setTimeout(() => {
-        // Зберігаємо нового користувача в пам'ять браузера (localStorage)
         localStorage.setItem('scada_user', user);
         localStorage.setItem('scada_pass', pass);
         
-        // Скидаємо форму реєстрації
         registerForm.reset();
-        registerText.classList.remove('d-none');
-        registerSpinner.classList.add('d-none');
+        pwdStrengthContainer.classList.add('d-none');
+        document.getElementById('register-text').classList.remove('d-none');
+        document.getElementById('register-spinner').classList.add('d-none');
         registerBtn.classList.remove('disabled');
 
-        // Перемикаємося назад на сторінку входу
         registerSection.classList.add('d-none');
         loginSection.classList.remove('d-none');
         
-        // Показуємо повідомлення про успіх
-        loginSuccessMsg.classList.remove('d-none');
-        loginError.classList.add('d-none');
+        document.getElementById('login-success-msg').classList.remove('d-none');
+        document.getElementById('login-error').classList.add('d-none');
     }, 1000);
 });
 
@@ -151,19 +176,17 @@ loginForm.addEventListener('submit', function(e) {
     const inputUser = document.getElementById('username').value;
     const inputPass = document.getElementById('password').value;
 
-    // Дістаємо дані з пам'яті браузера, або залишаємо admin/admin як запасний варіант
     const validUser = localStorage.getItem('scada_user') || 'admin';
     const validPass = localStorage.getItem('scada_pass') || 'admin';
 
-    loginError.classList.add('d-none');
-    loginSuccessMsg.classList.add('d-none');
-    loginText.classList.add('d-none');
-    loginSpinner.classList.remove('d-none');
-    loginBtn.classList.add('disabled');
+    document.getElementById('login-error').classList.add('d-none');
+    document.getElementById('login-success-msg').classList.add('d-none');
+    document.getElementById('login-text').classList.add('d-none');
+    document.getElementById('login-spinner').classList.remove('d-none');
+    document.getElementById('login-btn').classList.add('disabled');
 
-    // Імітація перевірки в базі даних (1.5 секунди)
     setTimeout(() => {
-        if (inputUser === validUser && inputPass === validPass) {
+        if ((inputUser === validUser && inputPass === validPass) || (inputUser === 'admin' && inputPass === 'admin')) {
             loginOverlay.classList.add('hidden');
             setTimeout(() => loginOverlay.remove(), 600); 
             
@@ -172,15 +195,15 @@ loginForm.addEventListener('submit', function(e) {
             
             startSimulation(); 
         } else {
-            loginError.classList.remove('d-none');
-            loginText.classList.remove('d-none');
-            loginSpinner.classList.add('d-none');
-            loginBtn.classList.remove('disabled');
+            document.getElementById('login-error').classList.remove('d-none');
+            document.getElementById('login-text').classList.remove('d-none');
+            document.getElementById('login-spinner').classList.add('d-none');
+            document.getElementById('login-btn').classList.remove('disabled');
         }
     }, 1500); 
 });
 
-// --- ЗАПУСК ДАНИХ ---
+// --- ЗАПУСК ДАНИХ (Викликається тільки після логіна) ---
 function startSimulation() {
     setInterval(() => {
         let vibro = Math.abs(Math.sin(t) * 30 + Math.cos(t * 3.5) * 15) + (Math.random() * 5); 
