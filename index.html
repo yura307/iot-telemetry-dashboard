@@ -10,31 +10,75 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- Екран авторизації (Оверлей) -->
+    <!-- Екран авторизації та реєстрації -->
     <div id="login-overlay" class="login-overlay">
-        <div class="login-card p-4 shadow-lg">
-            <div class="text-center mb-4">
-                <i class="bi bi-shield-lock text-accent" style="font-size: 3rem;"></i>
-                <h4 class="mt-2 text-white fw-bold">Система Авторизації</h4>
-                <p class="text-muted small">Введіть облікові дані адміністратора</p>
+        <div class="login-card p-4 shadow-lg position-relative">
+            
+            <!-- Блок Входу -->
+            <div id="login-section">
+                <div class="text-center mb-4">
+                    <i class="bi bi-shield-lock text-accent" style="font-size: 3rem;"></i>
+                    <h4 class="mt-2 text-white fw-bold">Система Авторизації</h4>
+                    <p class="text-muted small">Введіть облікові дані оператора</p>
+                </div>
+                <form id="login-form">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control bg-dark text-white border-secondary" id="username" placeholder="Логін" required autocomplete="off">
+                        <label for="username" class="text-muted">Логін (за замовчуванням: admin)</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="password" class="form-control bg-dark text-white border-secondary" id="password" placeholder="Пароль" required autocomplete="off">
+                        <label for="password" class="text-muted">Пароль (за замовчуванням: admin)</label>
+                    </div>
+                    <div id="login-error" class="text-danger small mb-3 d-none">
+                        <i class="bi bi-exclamation-circle me-1"></i> Невірний логін або пароль.
+                    </div>
+                    <div id="login-success-msg" class="text-success small mb-3 d-none">
+                        <i class="bi bi-check-circle me-1"></i> Обліковий запис створено! Тепер увійдіть.
+                    </div>
+                    <button type="submit" class="btn btn-outline-success w-100 py-2 fw-bold mb-3" id="login-btn">
+                        <span id="login-text">УВІЙТИ В СИСТЕМУ</span>
+                        <span id="login-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    </button>
+                    <div class="text-center mt-2">
+                        <a href="#" id="show-register" class="text-accent text-decoration-none small">Створити обліковий запис оператора</a>
+                    </div>
+                </form>
             </div>
-            <form id="login-form">
-                <div class="form-floating mb-3">
-                    <input type="text" class="form-control bg-dark text-white border-secondary" id="username" placeholder="Логін" required autocomplete="off">
-                    <label for="username" class="text-muted">Логін (admin)</label>
+
+            <!-- Блок Реєстрації (Прихований) -->
+            <div id="register-section" class="d-none">
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-badge text-primary" style="font-size: 3rem;"></i>
+                    <h4 class="mt-2 text-white fw-bold">Новий Оператор</h4>
+                    <p class="text-muted small">Реєстрація в системі телеметрії</p>
                 </div>
-                <div class="form-floating mb-3">
-                    <input type="password" class="form-control bg-dark text-white border-secondary" id="password" placeholder="Пароль" required autocomplete="off">
-                    <label for="password" class="text-muted">Пароль (admin)</label>
-                </div>
-                <div id="login-error" class="text-danger small mb-3 d-none">
-                    <i class="bi bi-exclamation-circle me-1"></i> Невірний логін або пароль. Доступ заборонено.
-                </div>
-                <button type="submit" class="btn btn-outline-success w-100 py-2 fw-bold" id="login-btn">
-                    <span id="login-text">УВІЙТИ В СИСТЕМУ</span>
-                    <span id="login-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                </button>
-            </form>
+                <form id="register-form">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control bg-dark text-white border-secondary" id="reg-username" placeholder="Логін" required autocomplete="off" minlength="3">
+                        <label for="reg-username" class="text-muted">Придумайте логін</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="password" class="form-control bg-dark text-white border-secondary" id="reg-password" placeholder="Пароль" required autocomplete="off" minlength="4">
+                        <label for="reg-password" class="text-muted">Придумайте пароль</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="password" class="form-control bg-dark text-white border-secondary" id="reg-password-confirm" placeholder="Повторіть пароль" required autocomplete="off">
+                        <label for="reg-password-confirm" class="text-muted">Повторіть пароль</label>
+                    </div>
+                    <div id="reg-error" class="text-danger small mb-3 d-none">
+                        <i class="bi bi-exclamation-circle me-1"></i> Паролі не співпадають!
+                    </div>
+                    <button type="submit" class="btn btn-outline-primary w-100 py-2 fw-bold mb-3" id="register-btn">
+                        <span id="register-text">ЗАРЕЄСТРУВАТИ</span>
+                        <span id="register-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    </button>
+                    <div class="text-center mt-2">
+                        <a href="#" id="show-login" class="text-secondary text-decoration-none small"><i class="bi bi-arrow-left"></i> Повернутися до входу</a>
+                    </div>
+                </form>
+            </div>
+
             <div class="text-center mt-4 text-secondary" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px;">
                 Restricted Access. Усі дії фіксуються.
             </div>
