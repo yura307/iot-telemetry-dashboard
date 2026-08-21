@@ -64,7 +64,7 @@
                 </form>
             </div>
 
-            <!-- Блок Реєстрації (Прихований) -->
+            <!-- Блок Реєстрації -->
             <div id="register-section" class="d-none">
                 <div class="text-center mb-4">
                     <i class="bi bi-person-badge text-primary" style="font-size: 3rem;"></i>
@@ -232,6 +232,13 @@
                                 </div>
                                 <button class="btn btn-outline-warning w-100" id="tfa-verify-btn">Підтвердити 2FA</button>
                                 <div id="tfa-success-msg" class="text-success small mt-2 d-none"><i class="bi bi-shield-check me-1"></i>2FA успішно активовано!</div>
+                            </div>
+
+                            <!-- НОВИЙ БЛОК: Небезпечна зона (Видалення акаунту) -->
+                            <div class="mt-5 border-top border-danger pt-4">
+                                <h6 class="text-danger fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>Небезпечна зона</h6>
+                                <p class="small text-muted mb-3">Видалення облікового запису є незворотнім процесом. Усі ваші налаштування будуть стерті.</p>
+                                <button class="btn btn-outline-danger w-100" id="delete-account-btn">Видалити мій акаунт</button>
                             </div>
                         </div>
 
