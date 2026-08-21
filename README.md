@@ -2,10 +2,10 @@
 
 A professional, real-time frontend dashboard designed for monitoring industrial IoT sensors (vibration, acoustics, temperature). This project serves as a high-fidelity prototype demonstrating modern SCADA (Supervisory Control and Data Acquisition) interface design, client-side state management, and real-time data visualization.
 
-##  Live Demo
+## Live Demo
 *(Insert your Render / GitHub Pages / Netlify link here)*
 
-##  Key Features
+## Key Features
 
 * **Real-Time Data Simulation:** Includes a custom built-in JavaScript engine that simulates high-frequency hardware telemetry (vibration harmonics and acoustic noise) without needing a physical backend.
 * **Interactive Data Visualization:** Utilizes `Chart.js` for rendering smooth, real-time line charts (amplitude) and bar charts (frequency spectrum).
@@ -24,7 +24,7 @@ A professional, real-time frontend dashboard designed for monitoring industrial 
 * **Charting:** Chart.js
 * **Icons:** Bootstrap Icons
 
-## ⚙️ How to Run Locally
+## How to Run Locally
 
 This is a dependency-free static project. No `npm install` or backend server is required for the simulation.
 
