@@ -6,6 +6,7 @@
     <title>Enterprise IoT SCADA | Telemetry Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -13,7 +14,6 @@
     <!-- Екран авторизації та реєстрації -->
     <div id="login-overlay" class="login-overlay">
         <div class="login-card p-4 shadow-lg position-relative">
-            
             <!-- Блок Входу -->
             <div id="login-section">
                 <div class="text-center mb-4">
@@ -47,7 +47,7 @@
                 </form>
             </div>
 
-            <!-- Блок Реєстрації -->
+            <!-- Блок Реєстрації (Прихований) -->
             <div id="register-section" class="d-none">
                 <div class="text-center mb-4">
                     <i class="bi bi-person-badge text-primary" style="font-size: 3rem;"></i>
@@ -115,18 +115,23 @@
                     <i class="bi bi-broadcast me-1"></i> Система Онлайн
                 </span>
                 
-                <!-- Блок профілю користувача (З'являється після входу) -->
-                <div id="user-profile-menu" class="d-none align-items-center border-start border-secondary ps-3 ms-1">
+                <!-- Блок профілю користувача з Випадаючим меню -->
+                <div id="user-profile-menu" class="d-none align-items-center border-start border-secondary ps-3 ms-1 dropdown">
                     <div class="text-end me-2 d-none d-sm-block">
                         <div class="text-white small fw-bold lh-1" id="nav-username">Admin</div>
-                        <div class="text-accent" style="font-size: 0.65rem;">Черговий оператор</div>
+                        <div class="text-accent" style="font-size: 0.65rem;" id="nav-role">Черговий оператор</div>
                     </div>
-                    <div class="bg-secondary bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center border border-secondary" style="width: 35px; height: 35px;">
+                    <!-- Кнопка, що відкриває меню -->
+                    <div class="bg-secondary bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center border border-secondary dropdown-toggle" style="width: 35px; height: 35px; cursor: pointer;" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-person-fill text-white"></i>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger ms-3" id="logout-btn" title="Вийти з системи">
-                        <i class="bi bi-box-arrow-right"></i> Вийти
-                    </button>
+                    <!-- Саме меню -->
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow border-secondary mt-2">
+                        <li><a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#profileModal"><i class="bi bi-sliders me-2 text-primary"></i>Налаштування</a></li>
+                        <li><a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#profileModal" onclick="document.getElementById('security-tab').click()"><i class="bi bi-shield-lock me-2 text-warning"></i>Подвійний захист</a></li>
+                        <li><hr class="dropdown-divider border-secondary"></li>
+                        <li><a class="dropdown-item py-2 text-danger" href="#" id="logout-btn"><i class="bi bi-box-arrow-right me-2"></i>Вийти з системи</a></li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -149,6 +154,77 @@
             <div class="col-lg-4"><div class="bg-panel p-4 h-100"><h6 class="mb-3 fw-bold text-white"><i class="bi bi-hdd-network text-secondary me-2"></i>Активні Вузли</h6><div class="list-group list-group-flush border-0"><div class="list-group-item bg-transparent px-0 border-secondary d-flex justify-content-between align-items-center"><div class="text-white small"><i class="bi bi-circle-fill text-success me-2" style="font-size: 8px;"></i>Верстат ЧПК (Ось X)<div class="text-muted" style="font-size: 0.8em; margin-left: 18px;">IP: 192.168.1.104 | Uptime: 4d 12h</div></div><i class="bi bi-battery-half text-warning"></i></div><div class="list-group-item bg-transparent px-0 border-secondary d-flex justify-content-between align-items-center"><div class="text-white small"><i class="bi bi-circle-fill text-success me-2" style="font-size: 8px;"></i>Мотор конвеєра<div class="text-muted" style="font-size: 0.8em; margin-left: 18px;">IP: 192.168.1.105 | Uptime: 1d 04h</div></div><i class="bi bi-battery-full text-success"></i></div></div></div></div>
         </div>
         <div class="text-center mt-5"><p class="text-muted small mb-0 text-uppercase" style="letter-spacing: 2px;">Прототип системи телеметрії</p></div>
+    </div>
+
+    <!-- МОДАЛЬНЕ ВІКНО НАЛАШТУВАНЬ ПРОФІЛЮ -->
+    <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-panel text-white">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-person-bounding-box me-2 text-primary"></i>Профіль Оператора</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- Вкладки (Tabs) -->
+                    <ul class="nav nav-tabs border-secondary px-3 pt-2" id="profileTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active text-white" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">Особисті дані</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link text-white" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">Безпека</button>
+                        </li>
+                    </ul>
+                    
+                    <!-- Вміст вкладок -->
+                    <div class="tab-content p-4" id="profileTabsContent">
+                        
+                        <!-- Вкладка 1: Особисті Дані -->
+                        <div class="tab-pane fade show active" id="general" role="tabpanel">
+                            <form id="profile-details-form">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small">Повне ім'я</label>
+                                    <input type="text" class="form-control bg-dark text-white border-secondary" id="profile-name" placeholder="Наприклад: Іван Франко">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small">Посада / Відділ</label>
+                                    <input type="text" class="form-control bg-dark text-white border-secondary" id="profile-role" placeholder="Головний інженер">
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100" id="save-profile-btn">Зберегти зміни</button>
+                            </form>
+                            <div id="profile-save-msg" class="text-success small mt-2 d-none text-center"><i class="bi bi-check-circle me-1"></i>Дані збережено успішно!</div>
+                        </div>
+
+                        <!-- Вкладка 2: Безпека та 2FA -->
+                        <div class="tab-pane fade" id="security" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-4 p-3 border border-secondary rounded bg-dark">
+                                <div>
+                                    <h6 class="mb-0 fw-bold">Двофакторна автентифікація (2FA)</h6>
+                                    <small class="text-muted">Захистіть свій обліковий запис</small>
+                                </div>
+                                <div class="form-check form-switch fs-4 mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="tfa-switch">
+                                </div>
+                            </div>
+
+                            <!-- Прихований блок налаштування 2FA -->
+                            <div id="tfa-setup-block" class="d-none text-center">
+                                <p class="small text-muted mb-3">Відскануйте цей QR-код у додатку Google Authenticator та введіть код нижче:</p>
+                                <div class="bg-white p-2 d-inline-block rounded mb-3">
+                                    <!-- Імітація QR Коду -->
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=EnterpriseSCADA_SecureLogin" alt="QR Code" width="120" height="120">
+                                </div>
+                                <div class="input-group mb-3 px-4">
+                                    <input type="text" class="form-control bg-dark text-white border-secondary text-center fs-4 letter-spacing-2" placeholder="0 0 0 0 0 0" maxlength="6" id="tfa-code-input">
+                                </div>
+                                <button class="btn btn-outline-warning w-100" id="tfa-verify-btn">Підтвердити 2FA</button>
+                                <div id="tfa-success-msg" class="text-success small mt-2 d-none"><i class="bi bi-shield-check me-1"></i>2FA успішно активовано!</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script src="app.js"></script>
