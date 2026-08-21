@@ -26,9 +26,10 @@
                         <input type="text" class="form-control bg-dark text-white border-secondary" id="username" placeholder="Email або Телефон" required autocomplete="off">
                         <label for="username" class="text-muted">Email або Телефон</label>
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="password" class="form-control bg-dark text-white border-secondary" id="password" placeholder="Пароль" required autocomplete="off">
+                    <div class="form-floating mb-3 position-relative">
+                        <input type="password" class="form-control bg-dark text-white border-secondary pe-5" id="password" placeholder="Пароль" required autocomplete="off">
                         <label for="password" class="text-muted">Пароль</label>
+                        <i class="bi bi-eye-slash pwd-toggle" id="toggle-login-pwd"></i>
                     </div>
                     <div id="login-error" class="text-danger small mb-3 d-none">
                         <i class="bi bi-exclamation-circle me-1"></i> Невірний логін або пароль.
@@ -46,7 +47,7 @@
                 </form>
             </div>
 
-            <!-- Блок Реєстрації (Прихований) -->
+            <!-- Блок Реєстрації -->
             <div id="register-section" class="d-none">
                 <div class="text-center mb-4">
                     <i class="bi bi-person-badge text-primary" style="font-size: 3rem;"></i>
@@ -58,13 +59,12 @@
                         <input type="text" class="form-control bg-dark text-white border-secondary" id="reg-username" placeholder="Email або Телефон" required autocomplete="off" minlength="5">
                         <label for="reg-username" class="text-muted">Email або Телефон</label>
                     </div>
-                    <div class="form-floating mb-1">
-                        <!-- Змінено мінімальну довжину на 8 та текст підказки -->
-                        <input type="password" class="form-control bg-dark text-white border-secondary" id="reg-password" placeholder="Пароль" required autocomplete="new-password" minlength="8">
+                    <div class="form-floating mb-1 position-relative">
+                        <input type="password" class="form-control bg-dark text-white border-secondary pe-5" id="reg-password" placeholder="Пароль" required autocomplete="new-password" minlength="8">
                         <label for="reg-password" class="text-muted">Створіть пароль (A-z, 0-9, !@#)</label>
+                        <i class="bi bi-eye-slash pwd-toggle" id="toggle-reg-pwd"></i>
                     </div>
                     
-                    <!-- Індикатор надійності пароля -->
                     <div class="password-strength-container mb-3 d-none" id="pwd-strength-container">
                         <div class="d-flex justify-content-between small mb-1">
                             <span class="text-muted" style="font-size: 0.75rem;">Надійність пароля:</span>
@@ -75,10 +75,12 @@
                         </div>
                     </div>
 
-                    <div class="form-floating mb-3 mt-2">
-                        <input type="password" class="form-control bg-dark text-white border-secondary" id="reg-password-confirm" placeholder="Повторіть пароль" required autocomplete="new-password">
+                    <div class="form-floating mb-3 mt-2 position-relative">
+                        <input type="password" class="form-control bg-dark text-white border-secondary pe-5" id="reg-password-confirm" placeholder="Повторіть пароль" required autocomplete="new-password">
                         <label for="reg-password-confirm" class="text-muted">Повторіть пароль</label>
+                        <i class="bi bi-eye-slash pwd-toggle" id="toggle-reg-pwd-confirm"></i>
                     </div>
+                    
                     <div id="reg-error" class="text-danger small mb-3 d-none">
                         <i class="bi bi-exclamation-circle me-1"></i> Паролі не співпадають!
                     </div>
@@ -109,10 +111,23 @@
                 </div>
             </a>
             <div class="d-flex align-items-center gap-3">
-                <span class="badge bg-success bg-opacity-10 text-success border border-success p-2 rounded-pill">
+                <span class="badge bg-success bg-opacity-10 text-success border border-success p-2 rounded-pill d-none d-md-inline-block">
                     <i class="bi bi-broadcast me-1"></i> Система Онлайн
                 </span>
-                <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-download me-1"></i> Експорт CSV</button>
+                
+                <!-- Блок профілю користувача (З'являється після входу) -->
+                <div id="user-profile-menu" class="d-none align-items-center border-start border-secondary ps-3 ms-1">
+                    <div class="text-end me-2 d-none d-sm-block">
+                        <div class="text-white small fw-bold lh-1" id="nav-username">Admin</div>
+                        <div class="text-accent" style="font-size: 0.65rem;">Черговий оператор</div>
+                    </div>
+                    <div class="bg-secondary bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center border border-secondary" style="width: 35px; height: 35px;">
+                        <i class="bi bi-person-fill text-white"></i>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger ms-3" id="logout-btn" title="Вийти з системи">
+                        <i class="bi bi-box-arrow-right"></i> Вийти
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
