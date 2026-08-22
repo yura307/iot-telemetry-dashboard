@@ -1,13 +1,37 @@
+/* --- CSS Змінні для Темної та Світлої тем --- */
+:root[data-bs-theme="dark"] {
+    --bg-main: #0f111a;
+    --bg-panel: #1a1d27;
+    --border-color: #2d3243;
+    --text-color: #ffffff;
+    --log-bg: #090a0f;
+    --log-scrollbar: #2d3243;
+    --overlay-bg: rgba(15, 17, 26, 0.85);
+}
+
+:root[data-bs-theme="light"] {
+    --bg-main: #f0f2f5;
+    --bg-panel: #ffffff;
+    --border-color: #dee2e6;
+    --text-color: #212529;
+    --log-bg: #f8f9fa;
+    --log-scrollbar: #ced4da;
+    --overlay-bg: rgba(255, 255, 255, 0.85);
+}
+
 body { 
-    background-color: #0f111a; 
+    background-color: var(--bg-main); 
+    color: var(--text-color);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
     overflow-x: hidden; 
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .bg-panel { 
-    background-color: #1a1d27; 
-    border: 1px solid #2d3243; 
+    background-color: var(--bg-panel); 
+    border: 1px solid var(--border-color); 
     border-radius: 12px; 
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .text-accent { color: #00e676; }
@@ -17,13 +41,14 @@ canvas { max-height: 280px; }
 .log-console { 
     height: 150px; 
     overflow-y: auto; 
-    background-color: #090a0f; 
+    background-color: var(--log-bg); 
     color: #00e676; 
     font-family: monospace; 
     font-size: 0.85em; 
     border-radius: 8px; 
     padding: 10px; 
-    border: 1px solid #2d3243; 
+    border: 1px solid var(--border-color); 
+    transition: background-color 0.3s ease;
 }
 
 .kpi-value { 
@@ -39,44 +64,36 @@ canvas { max-height: 280px; }
     letter-spacing: 1px; 
 }
 
-.alert-flash { 
-    animation: flashAlert 1s infinite alternate; 
-}
+.alert-flash { animation: flashAlert 1s infinite alternate; }
 
 @keyframes flashAlert { 
     from { background-color: rgba(255, 23, 68, 0.1); border-color: rgba(255, 23, 68, 0.5); } 
     to { background-color: rgba(255, 23, 68, 0.3); border-color: #ff1744; } 
 }
 
-/* Custom Scrollbar */
 .log-console::-webkit-scrollbar { width: 6px; }
-.log-console::-webkit-scrollbar-track { background: #090a0f; }
-.log-console::-webkit-scrollbar-thumb { background: #2d3243; border-radius: 3px; }
+.log-console::-webkit-scrollbar-track { background: var(--log-bg); }
+.log-console::-webkit-scrollbar-thumb { background: var(--log-scrollbar); border-radius: 3px; }
 
 /* Стилі екрана авторизації */
 .login-overlay {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background-color: rgba(15, 17, 26, 0.85); backdrop-filter: blur(8px); 
+    background-color: var(--overlay-bg); backdrop-filter: blur(8px); 
     z-index: 9999; display: flex; align-items: center; justify-content: center;
-    transition: opacity 0.6s ease-in-out, visibility 0.6s;
+    transition: opacity 0.6s ease-in-out, visibility 0.6s, background-color 0.3s ease;
 }
 
-.login-card { background-color: #1a1d27; border: 1px solid #2d3243; border-radius: 12px; width: 100%; max-width: 380px; }
-.form-control:focus { background-color: #212533 !important; color: white !important; border-color: #00e676; box-shadow: 0 0 0 0.25rem rgba(0, 230, 118, 0.25); }
+.login-card { background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; width: 100%; max-width: 380px; }
+.form-control:focus { border-color: #00e676; box-shadow: 0 0 0 0.25rem rgba(0, 230, 118, 0.25); }
 .form-floating > label { color: #8b949e; }
 .login-overlay.hidden { opacity: 0; visibility: hidden; }
 #pwd-strength-bar { transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s ease; }
 #register-btn:disabled { cursor: not-allowed; opacity: 0.6; }
 
-/* Іконка ока для пароля */
-.pwd-toggle {
-    position: absolute; top: 50%; right: 15px; transform: translateY(-50%);
-    cursor: pointer; color: #8b949e; z-index: 10; font-size: 1.2rem;
-}
-.pwd-toggle:hover { color: #fff; }
+.pwd-toggle { position: absolute; top: 50%; right: 15px; transform: translateY(-50%); cursor: pointer; color: #8b949e; z-index: 10; font-size: 1.2rem; }
+.pwd-toggle:hover { color: #00e676; }
 
-/* Стилі для вкладок профілю (Modal) */
 .nav-tabs .nav-link { color: #8b949e !important; border: none; border-bottom: 2px solid transparent; }
-.nav-tabs .nav-link:hover { border-color: #2d3243; }
-.nav-tabs .nav-link.active { color: #fff !important; background-color: transparent; border-bottom: 2px solid #0d6efd; }
+.nav-tabs .nav-link:hover { border-color: var(--border-color); }
+.nav-tabs .nav-link.active { color: var(--text-color) !important; background-color: transparent; border-bottom: 2px solid #0d6efd; }
 .letter-spacing-2 { letter-spacing: 0.5rem; }
