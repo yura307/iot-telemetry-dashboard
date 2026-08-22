@@ -16,7 +16,7 @@ const soundRadarChart = new Chart(ctxSound, {
 const logConsole = document.getElementById('logConsole');
 const kpiVibro = document.getElementById('kpi-vibro'); const kpiSound = document.getElementById('kpi-sound'); const kpiTemp = document.getElementById('kpi-temp'); const kpiRssi = document.getElementById('kpi-rssi');
 const alertCard = document.getElementById('kpi-vibro-card'); const alertIcon = document.getElementById('alert-icon');
-let t = 0; let isAlert = false; let simulationInterval;
+let isAlert = false; let activeUser = null;
 
 function addLog(msg, type = "INFO") {
     const time = new Date().toISOString().substring(11, 23);
@@ -36,10 +36,6 @@ document.getElementById('toggle-login-pwd').addEventListener('click', () => togg
 document.getElementById('toggle-reg-pwd').addEventListener('click', () => togglePasswordVisibility('reg-password', 'toggle-reg-pwd'));
 document.getElementById('toggle-reg-pwd-confirm').addEventListener('click', () => togglePasswordVisibility('reg-password-confirm', 'toggle-reg-pwd-confirm'));
 
-let dbUsers = JSON.parse(localStorage.getItem('scada_users')) || {};
-if (!dbUsers['admin']) { dbUsers['admin'] = { pass: 'admin', name: 'Системний Admin', role: 'Головний інженер', tfa: false }; localStorage.setItem('scada_users', JSON.stringify(dbUsers)); }
-let activeUser = null; 
-
 const loginOverlay = document.getElementById('login-overlay');
 const loginSection = document.getElementById('login-section');
 const registerSection = document.getElementById('register-section');
@@ -55,208 +51,120 @@ const registerBtn = document.getElementById('register-btn');
 document.getElementById('show-register').addEventListener('click', (e) => { e.preventDefault(); loginSection.classList.add('d-none'); registerSection.classList.remove('d-none'); });
 document.getElementById('show-login').addEventListener('click', (e) => { e.preventDefault(); registerSection.classList.add('d-none'); loginSection.classList.remove('d-none'); });
 
-window.addEventListener('DOMContentLoaded', () => {
-    const savedLogin = localStorage.getItem('scada_remembered_user');
-    const savedPass = localStorage.getItem('scada_remembered_pass');
-    if (savedLogin && savedPass) {
-        document.getElementById('username').value = savedLogin;
-        document.getElementById('password').value = savedPass;
-        document.getElementById('remember-me').checked = true;
-    }
-});
-
-// --- ВАЛІДАЦІЯ ПАРОЛЯ ---
+// Валідація пароля
 regPasswordInput.addEventListener('input', function() {
     const val = this.value;
     if (val.length > 0) { pwdStrengthContainer.classList.remove('d-none'); } else { pwdStrengthContainer.classList.add('d-none'); registerBtn.disabled = true; return; }
-    
-    // Жорстка заборона кирилиці
     if (/[А-Яа-яІіЇїЄєҐґ]/.test(val)) {
-        pwdStrengthBar.style.width = '100%';
-        pwdStrengthBar.className = 'progress-bar bg-danger';
-        pwdStrengthText.innerText = 'Помилка: Використовуйте лише англійські літери!';
-        pwdStrengthText.className = 'fw-bold text-danger';
-        registerBtn.disabled = true;
-        return;
+        pwdStrengthBar.style.width = '100%'; pwdStrengthBar.className = 'progress-bar bg-danger';
+        pwdStrengthText.innerText = 'Помилка: Лише англійські літери!'; pwdStrengthText.className = 'fw-bold text-danger';
+        registerBtn.disabled = true; return;
     }
-
     let missing = [];
-    if (val.length < 8) missing.push('8 символів'); 
-    if (!/[A-Z]/.test(val)) missing.push('велику літеру (A-Z)'); 
-    if (!/[0-9]/.test(val)) missing.push('цифру'); 
-    if (!/[^A-Za-z0-9]/.test(val)) missing.push('спецсимвол (!@#)');
-    
-    if (missing.length >= 3) { pwdStrengthBar.style.width = '33%'; pwdStrengthBar.className = 'progress-bar bg-danger'; pwdStrengthText.innerText = 'Слабкий: додайте ' + missing[0]; pwdStrengthText.className = 'fw-bold text-danger'; registerBtn.disabled = true; } 
-    else if (missing.length > 0) { pwdStrengthBar.style.width = '66%'; pwdStrengthBar.className = 'progress-bar bg-warning'; pwdStrengthText.innerText = 'Бракує: ' + missing.join(', '); pwdStrengthText.className = 'fw-bold text-warning'; registerBtn.disabled = true; } 
-    else { pwdStrengthBar.style.width = '100%'; pwdStrengthBar.className = 'progress-bar bg-success'; pwdStrengthText.innerText = 'Надійний (Всі вимоги виконано)'; pwdStrengthText.className = 'fw-bold text-success'; registerBtn.disabled = false; }
+    if (val.length < 8) missing.push('8 символів'); if (!/[A-Z]/.test(val)) missing.push('велику літеру'); if (!/[0-9]/.test(val)) missing.push('цифру'); if (!/[^A-Za-z0-9]/.test(val)) missing.push('спецсимвол');
+    if (missing.length > 0) {
+        pwdStrengthBar.style.width = '50%'; pwdStrengthBar.className = 'progress-bar bg-warning';
+        pwdStrengthText.innerText = 'Бракує: ' + missing.join(', '); pwdStrengthText.className = 'fw-bold text-warning';
+        registerBtn.disabled = true;
+    } else {
+        pwdStrengthBar.style.width = '100%'; pwdStrengthBar.className = 'progress-bar bg-success';
+        pwdStrengthText.innerText = 'Надійний'; pwdStrengthText.className = 'fw-bold text-success';
+        registerBtn.disabled = false;
+    }
 });
 
-// --- МИТТЄВА РЕЄСТРАЦІЯ ---
-registerForm.addEventListener('submit', function(e) {
+// Реєстрація через хмарний сервер
+registerForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     const user = regUsernameInput.value.trim();
     const pass = regPasswordInput.value;
     const passConfirm = document.getElementById('reg-password-confirm').value;
     const regError = document.getElementById('reg-error');
 
-    if (pass !== passConfirm) { regError.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Паролі не співпадають!'; regError.classList.remove('d-none'); return; }
-    if (dbUsers[user]) { regError.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Обліковий запис вже існує!'; regError.classList.remove('d-none'); return; }
-    
-    regError.classList.add('d-none');
-    document.getElementById('register-text').classList.add('d-none');
-    document.getElementById('register-spinner').classList.remove('d-none');
-    registerBtn.classList.add('disabled');
+    if (pass !== passConfirm) { regError.innerHTML = 'Паролі не співпадають!'; regError.classList.remove('d-none'); return; }
 
-    setTimeout(() => {
-        // Миттєво створюємо користувача в базі
-        dbUsers[user] = { pass: pass, name: '', role: '', tfa: false };
-        localStorage.setItem('scada_users', JSON.stringify(dbUsers));
+    try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user, password: pass })
+        });
+        const result = await response.json();
         
-        // Очищаємо форму і перемикаємося на екран входу
-        registerForm.reset(); 
-        pwdStrengthContainer.classList.add('d-none');
-        document.getElementById('register-text').classList.remove('d-none');
-        document.getElementById('register-spinner').classList.add('d-none');
-        registerBtn.classList.remove('disabled');
+        if (!response.ok) throw new Error(result.detail || 'Помилка реєстрації');
 
-        registerSection.classList.add('d-none'); 
-        loginSection.classList.remove('d-none');
-        document.getElementById('login-success-msg').classList.remove('d-none'); 
-    }, 1000);
+        registerForm.reset(); pwdStrengthContainer.classList.add('d-none');
+        registerSection.classList.add('d-none'); loginSection.classList.remove('d-none');
+        document.getElementById('login-success-msg').classList.remove('d-none');
+    } catch (err) {
+        regError.innerHTML = err.message; regError.classList.remove('d-none');
+    }
 });
 
-// --- ВХІД З БАЗИ ДАНИХ ---
-loginForm.addEventListener('submit', function(e) {
-    e.preventDefault(); 
+// Вхід через хмарний сервер
+loginForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
     const inputUser = document.getElementById('username').value.trim();
     const inputPass = document.getElementById('password').value;
-    const rememberMe = document.getElementById('remember-me').checked;
 
-    document.getElementById('login-error').classList.add('d-none');
-    document.getElementById('login-success-msg').classList.add('d-none');
-    document.getElementById('login-text').classList.add('d-none');
-    document.getElementById('login-spinner').classList.remove('d-none');
-    document.getElementById('login-btn').classList.add('disabled');
-
-    setTimeout(() => {
-        if (dbUsers[inputUser] && dbUsers[inputUser].pass === inputPass) {
-            activeUser = inputUser; 
-            
-            if (rememberMe) {
-                localStorage.setItem('scada_remembered_user', inputUser);
-                localStorage.setItem('scada_remembered_pass', inputPass);
-            } else {
-                localStorage.removeItem('scada_remembered_user');
-                localStorage.removeItem('scada_remembered_pass');
-            }
-
-            const savedName = dbUsers[activeUser].name || activeUser;
-            const savedRole = dbUsers[activeUser].role || 'Черговий оператор';
-            
-            document.getElementById('nav-username').innerText = savedName;
-            document.getElementById('nav-role').innerText = savedRole;
-            document.getElementById('user-profile-menu').classList.remove('d-none');
-            document.getElementById('user-profile-menu').classList.add('d-flex');
-
-            loginOverlay.classList.add('hidden');
-            setTimeout(() => loginOverlay.style.display = 'none', 600); 
-            addLog(`[AUTH] Оператор '${inputUser}' успішно авторизований.`, 'INFO');
-            if(dbUsers[activeUser].tfa === true) { addLog(`[SECURITY] 2FA верифікацію пройдено успішно.`, 'INFO'); }
-            addLog(`[STREAM] Відкриття захищеного WebSocket з'єднання...`, 'INFO');
-            startSimulation(); 
-            
-            document.getElementById('profile-name').value = dbUsers[activeUser].name || '';
-            document.getElementById('profile-role').value = dbUsers[activeUser].role || '';
-            if(dbUsers[activeUser].tfa === true) {
-                document.getElementById('tfa-switch').checked = true;
-                document.getElementById('tfa-setup-block').classList.remove('d-none');
-                document.getElementById('tfa-code-input').disabled = true;
-                document.getElementById('tfa-verify-btn').classList.add('d-none');
-                document.getElementById('tfa-success-msg').classList.remove('d-none');
-            } else {
-                document.getElementById('tfa-switch').checked = false;
-                document.getElementById('tfa-setup-block').classList.add('d-none');
-                document.getElementById('tfa-code-input').disabled = false;
-                document.getElementById('tfa-code-input').value = '';
-                document.getElementById('tfa-verify-btn').classList.remove('d-none');
-                document.getElementById('tfa-success-msg').classList.add('d-none');
-            }
-        } else {
-            document.getElementById('login-error').classList.remove('d-none');
-            document.getElementById('login-text').classList.remove('d-none');
-            document.getElementById('login-spinner').classList.add('d-none');
-            document.getElementById('login-btn').classList.remove('disabled');
-        }
-    }, 1500); 
-});
-
-document.getElementById('logout-btn').addEventListener('click', function() { location.reload(); });
-
-// ЛОГІКА ПРОФІЛЮ ТА 2FA
-document.getElementById('profile-details-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const newName = document.getElementById('profile-name').value;
-    const newRole = document.getElementById('profile-role').value;
-    
-    dbUsers[activeUser].name = newName;
-    dbUsers[activeUser].role = newRole;
-    localStorage.setItem('scada_users', JSON.stringify(dbUsers));
-    
-    document.getElementById('nav-username').innerText = newName || activeUser;
-    document.getElementById('nav-role').innerText = newRole || 'Черговий оператор';
-    
-    document.getElementById('profile-save-msg').classList.remove('d-none');
-    setTimeout(() => document.getElementById('profile-save-msg').classList.add('d-none'), 3000);
-});
-
-document.getElementById('tfa-switch').addEventListener('change', function() {
-    const setupBlock = document.getElementById('tfa-setup-block');
-    if (this.checked) { setupBlock.classList.remove('d-none'); } 
-    else {
-        setupBlock.classList.add('d-none'); dbUsers[activeUser].tfa = false; localStorage.setItem('scada_users', JSON.stringify(dbUsers));
-        document.getElementById('tfa-success-msg').classList.add('d-none'); document.getElementById('tfa-code-input').disabled = false;
-        document.getElementById('tfa-code-input').value = ''; document.getElementById('tfa-verify-btn').classList.remove('d-none');
-    }
-});
-
-document.getElementById('tfa-verify-btn').addEventListener('click', function() {
-    const code = document.getElementById('tfa-code-input').value;
-    if(code.length === 6) {
-        dbUsers[activeUser].tfa = true; localStorage.setItem('scada_users', JSON.stringify(dbUsers));
-        this.classList.add('d-none'); document.getElementById('tfa-code-input').disabled = true; document.getElementById('tfa-success-msg').classList.remove('d-none');
-    } else { alert("Будь ласка, введіть 6-значний код."); }
-});
-
-document.getElementById('delete-account-btn').addEventListener('click', function() {
-    if (activeUser === 'admin') { alert("Помилка доступу: Системний обліковий запис 'admin' неможливо видалити."); return; }
-    if (confirm("УВАГА! Ви впевнені, що хочете назавжди видалити цей обліковий запис? Цю дію неможливо скасувати.")) {
-        delete dbUsers[activeUser]; localStorage.setItem('scada_users', JSON.stringify(dbUsers));
-        if (localStorage.getItem('scada_remembered_user') === activeUser) {
-            localStorage.removeItem('scada_remembered_user'); localStorage.removeItem('scada_remembered_pass');
-        }
-        location.reload();
-    }
-});
-
-// Симуляція Даних
-function startSimulation() {
-    simulationInterval = setInterval(() => {
-        let vibro = Math.abs(Math.sin(t) * 30 + Math.cos(t * 3.5) * 15) + (Math.random() * 5); 
-        if (Math.random() > 0.95) vibro += 40 + Math.random() * 20;
-        const sound = 65 + (Math.random() * 15);
-        kpiVibro.innerText = vibro.toFixed(1); kpiSound.innerText = sound.toFixed(1);
-        if (Math.random() > 0.7) kpiTemp.innerText = (42.0 + Math.random()).toFixed(1);
-        if (Math.random() > 0.9) kpiRssi.innerText = Math.floor(-75 + Math.random() * 15);
-        if (vibro > 75) { if (!isAlert) { alertCard.classList.add('alert-flash'); alertIcon.classList.remove('d-none'); addLog(`КРИТИЧНА ВІБРАЦІЯ: ${vibro.toFixed(2)} мм/с (Поріг 75.0)`, "CRIT"); isAlert = true; } } else { if (isAlert) { alertCard.classList.remove('alert-flash'); alertIcon.classList.add('d-none'); addLog(`Вібрація стабілізувалась: ${vibro.toFixed(2)} мм/с`, "INFO"); isAlert = false; } }
-        const timeStr = new Date().getSeconds();
-        mainVibroChart.data.labels.shift(); mainVibroChart.data.labels.push(timeStr);
-        mainVibroChart.data.datasets[0].data.shift(); mainVibroChart.data.datasets[0].data.push(vibro);
-        mainVibroChart.update();
-        soundRadarChart.data.datasets[0].data = soundRadarChart.data.datasets[0].data.map(val => {
-            let newVal = val + (Math.random() * 10 - 5); return Math.max(20, Math.min(100, newVal));
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: inputUser, password: inputPass })
         });
+        const result = await response.json();
+
+        if (!response.ok) throw new Error(result.detail || 'Невірний логін або пароль');
+
+        activeUser = result.username;
+        document.getElementById('nav-username').innerText = result.name;
+        document.getElementById('nav-role').innerText = result.role;
+        document.getElementById('user-profile-menu').classList.remove('d-none');
+        document.getElementById('user-profile-menu').classList.add('d-flex');
+
+        loginOverlay.classList.add('hidden');
+        setTimeout(() => loginOverlay.style.display = 'none', 600);
+        addLog(`[AUTH] Оператор '${activeUser}' успішно авторизований через хмару.`, 'INFO');
+
+        startWebSocket();
+    } catch (err) {
+        document.getElementById('login-error').classList.remove('d-none');
+    }
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => location.reload());
+
+// Підключення до справжнього WebSocket сервера для отримання даних датчиків
+function startWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        
+        kpiVibro.innerText = data.vibro;
+        kpiSound.innerText = data.sound;
+        kpiTemp.innerText = data.temp;
+        kpiRssi.innerText = data.rssi;
+
+        if (data.vibro > 75) {
+            if (!isAlert) { alertCard.classList.add('alert-flash'); alertIcon.classList.remove('d-none'); addLog(`КРИТИЧНА ВІБРАЦІЯ: ${data.vibro} мм/с`, "CRIT"); isAlert = true; }
+        } else {
+            if (isAlert) { alertCard.classList.remove('alert-flash'); alertIcon.classList.add('d-none'); addLog(`Вібрація стабілізувалась`, "INFO"); isAlert = false; }
+        }
+
+        mainVibroChart.data.labels.shift(); mainVibroChart.data.labels.push(new Date().getSeconds());
+        mainVibroChart.data.datasets[0].data.shift(); mainVibroChart.data.datasets[0].data.push(data.vibro);
+        mainVibroChart.update();
+
+        soundRadarChart.data.datasets[0].data = soundRadarChart.data.datasets[0].data.map(val => Math.max(20, Math.min(100, val + (Math.random() * 10 - 5))));
         soundRadarChart.update();
-        if (Math.random() > 0.85 && !isAlert) addLog(`Отримано пакет IoT_DATA_PAYLOAD від Node_1`);
-        t += 0.2;
-    }, 300);
+    };
+
+    ws.onclose = function() {
+        addLog(`[WARNING] Втрачено зв'язок із сервером. Перепідключення...`, "WARN");
+        setTimeout(startWebSocket, 3000);
+    };
 }
