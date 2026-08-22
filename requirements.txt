@@ -3,3 +3,4 @@ uvicorn
 pydantic
 websockets
 aiofiles
+pymongo
