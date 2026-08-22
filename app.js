@@ -202,6 +202,11 @@ loginForm.addEventListener('submit', async function(e) {
         activeUser = result.username;
         document.getElementById('nav-username').innerText = result.name;
         document.getElementById('nav-role').innerText = result.role;
+        
+        // Підставляємо дані профілю у форму налаштувань
+        document.getElementById('profile-name').value = result.name === activeUser ? '' : result.name;
+        document.getElementById('profile-role').value = result.role;
+
         document.getElementById('user-profile-menu').classList.remove('d-none');
         document.getElementById('user-profile-menu').classList.add('d-flex');
         loginOverlay.classList.add('hidden');
@@ -247,4 +252,36 @@ function startWebSocket() {
         addLog(`[WARNING] Втрачено зв'язок із сервером. Перепідключення...`, "WARN");
         setTimeout(startWebSocket, 3000);
     };
+}
+
+// --- ОБРОБКА ЗБЕРЕЖЕННЯ ПРОФІЛЮ (БЕЗ ПЕРЕЗАВАНТАЖЕННЯ) ---
+const profileForm = document.getElementById('profile-details-form');
+if(profileForm) {
+    profileForm.addEventListener('submit', async function(e) {
+        e.preventDefault(); 
+        
+        const newName = document.getElementById('profile-name').value;
+        const newRole = document.getElementById('profile-role').value;
+        
+        if(!activeUser) return;
+
+        try {
+            const response = await fetch('/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: activeUser, name: newName, role: newRole })
+            });
+            
+            if(response.ok) {
+                document.getElementById('nav-username').innerText = newName || activeUser;
+                document.getElementById('nav-role').innerText = newRole;
+                
+                const msg = document.getElementById('profile-save-msg');
+                msg.classList.remove('d-none');
+                setTimeout(() => msg.classList.add('d-none'), 3000);
+            }
+        } catch (err) {
+            console.error("Помилка збереження:", err);
+        }
+    });
 }
