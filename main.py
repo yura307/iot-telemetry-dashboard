@@ -2,14 +2,13 @@ import random
 import asyncio
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 app = FastAPI(title="Enterprise IoT SCADA Backend")
 
-# Дозволяємо доступ з будь-яких пристроїв (CORS)
+# Дозволяємо доступ з будь-яких пристроїв
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Проста симуляція бази даних у пам'яті сервера (з дефолтним адміном)
+# Проста база даних у пам'яті
 users_db = {
     "admin": {
         "pass": "admin",
@@ -28,8 +27,8 @@ users_db = {
     }
 }
 
-# Моделі даних для запитів
-class UserRegister(BaseModel.model_config = {}):
+# --- ВИПРАВЛЕНІ МОДЕЛІ ДАНИХ ---
+class UserRegister(BaseModel):
     username: str
     password: str
 
@@ -42,7 +41,6 @@ class UserProfileUpdate(BaseModel):
     name: str
     role: str
 
-# API Реєстрації
 @app.post("/api/register")
 def register_user(data: UserRegister):
     username = data.username.strip()
@@ -57,7 +55,6 @@ def register_user(data: UserRegister):
     }
     return {"status": "success", "message": "Акаунт створено"}
 
-# API Входу
 @app.post("/api/login")
 def login_user(data: UserLogin):
     username = data.username.strip()
@@ -74,7 +71,6 @@ def login_user(data: UserLogin):
         "tfa": user["tfa"]
     }
 
-# API Оновлення профілю
 @app.post("/api/profile")
 def update_profile(data: UserProfileUpdate):
     user = users_db.get(data.username)
@@ -85,7 +81,6 @@ def update_profile(data: UserProfileUpdate):
     user["role"] = data.role
     return {"status": "success"}
 
-# WebSocket для трансляції датчиків у реальному часі
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -105,9 +100,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 "timestamp": t
             }
             await websocket.send_json(payload)
-            await asyncio.sleep(0.3)  # Відправляємо дані 3 рази на секунду
+            await asyncio.sleep(0.3)
     except WebSocketDisconnect:
         pass
 
-# Роздача статики (щоб сервер сам показував ваш сайт)
+# Цей рядок роздає ваші HTML та CSS файли
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
