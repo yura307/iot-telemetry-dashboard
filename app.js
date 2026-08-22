@@ -1,6 +1,49 @@
-Chart.defaults.color = '#8b949e'; Chart.defaults.borderColor = '#2d3243';
+// --- ЗМІНА ТЕМИ (Dark/Light Mode) ---
+const themeToggleBtn = document.getElementById('theme-toggle');
+const htmlElement = document.documentElement;
+let currentTheme = localStorage.getItem('scada_theme') || 'dark';
 
-// --- РЕАЛ-ТАЙМ ГРАФІКИ ---
+function updateChartColors(theme) {
+    const textColor = theme === 'dark' ? '#8b949e' : '#6c757d';
+    const gridColor = theme === 'dark' ? 'rgba(45, 50, 67, 0.5)' : 'rgba(0,0,0,0.1)';
+
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
+
+    if (typeof mainVibroChart !== 'undefined') {
+        mainVibroChart.options.scales.x.ticks.color = textColor;
+        mainVibroChart.options.scales.y.ticks.color = textColor;
+        mainVibroChart.options.scales.y.grid.color = gridColor;
+        mainVibroChart.update();
+    }
+    if (typeof soundRadarChart !== 'undefined') {
+        soundRadarChart.options.scales.y.ticks.color = textColor;
+        soundRadarChart.options.scales.y.grid.color = gridColor;
+        soundRadarChart.update();
+    }
+    if (typeof historyChart !== 'undefined') {
+        historyChart.options.plugins.legend.labels.color = textColor;
+        historyChart.options.scales.x.ticks.color = textColor;
+        historyChart.options.scales.x.grid.color = gridColor;
+        historyChart.options.scales.y.ticks.color = textColor;
+        historyChart.options.scales.y.grid.color = gridColor;
+        historyChart.update();
+    }
+}
+
+function applyTheme(theme) {
+    htmlElement.setAttribute('data-bs-theme', theme);
+    localStorage.setItem('scada_theme', theme);
+    themeToggleBtn.innerHTML = theme === 'dark' ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon-stars"></i>';
+    updateChartColors(theme);
+}
+
+themeToggleBtn.addEventListener('click', () => {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(currentTheme);
+});
+
+// --- ГРАФІКИ ---
 const ctxVibro = document.getElementById('mainVibroChart').getContext('2d');
 const ctxSound = document.getElementById('soundRadarChart').getContext('2d');
 
@@ -17,9 +60,7 @@ const soundRadarChart = new Chart(ctxSound, {
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100 } } }
 });
 
-// --- ІСТОРИЧНИЙ ГРАФІК (Останні 24 години) ---
 const historyLabels = Array.from({length: 24}, (_, i) => `${i}:00`);
-
 const mockHistoryData = {
     vibro: [30, 32, 28, 35, 31, 29, 33, 40, 45, 82, 75, 40, 35, 30, 28, 32, 34, 30, 29, 31, 33, 30, 28, 30], 
     sound: [60, 62, 61, 65, 63, 60, 64, 68, 70, 88, 80, 68, 65, 62, 60, 63, 64, 61, 60, 62, 64, 61, 60, 61],
@@ -33,23 +74,14 @@ let historyChart = new Chart(ctxHistory, {
     data: {
         labels: historyLabels,
         datasets: [{
-            label: 'Вібрація (мм/с)',
-            data: mockHistoryData.vibro,
-            borderColor: '#0d6efd',
-            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            label: 'Вібрація (мм/с)', data: mockHistoryData.vibro, borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)',
             borderWidth: 2, fill: true, tension: 0.3, pointBackgroundColor: '#0d6efd', pointRadius: 3, pointHoverRadius: 6
         }]
     },
     options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { 
-            legend: { display: true, labels: { color: '#8b949e' } },
-            tooltip: { mode: 'index', intersect: false }
-        },
-        scales: {
-            x: { grid: { color: 'rgba(45, 50, 67, 0.5)' }, ticks: { color: '#8b949e' } },
-            y: { grid: { color: 'rgba(45, 50, 67, 0.5)' }, ticks: { color: '#8b949e' } }
-        },
+        plugins: { legend: { display: true }, tooltip: { mode: 'index', intersect: false } },
+        scales: { x: {}, y: {} },
         interaction: { mode: 'nearest', axis: 'x', intersect: false }
     }
 });
@@ -62,28 +94,19 @@ window.switchHistory = function(type, btnElement) {
     historyChart.data.datasets[0].data = mockHistoryData[type];
     
     if (type === 'vibro') {
-        historyChart.data.datasets[0].borderColor = '#0d6efd';
-        historyChart.data.datasets[0].backgroundColor = 'rgba(13, 110, 253, 0.1)';
-        historyChart.data.datasets[0].pointBackgroundColor = '#0d6efd';
-        historyChart.data.datasets[0].label = 'Вібрація (мм/с)';
+        historyChart.data.datasets[0].borderColor = '#0d6efd'; historyChart.data.datasets[0].backgroundColor = 'rgba(13, 110, 253, 0.1)'; historyChart.data.datasets[0].pointBackgroundColor = '#0d6efd'; historyChart.data.datasets[0].label = 'Вібрація (мм/с)';
     } else if (type === 'sound') {
-        historyChart.data.datasets[0].borderColor = '#ffc107';
-        historyChart.data.datasets[0].backgroundColor = 'rgba(255, 193, 7, 0.1)';
-        historyChart.data.datasets[0].pointBackgroundColor = '#ffc107';
-        historyChart.data.datasets[0].label = 'Шум (dB)';
+        historyChart.data.datasets[0].borderColor = '#ffc107'; historyChart.data.datasets[0].backgroundColor = 'rgba(255, 193, 7, 0.1)'; historyChart.data.datasets[0].pointBackgroundColor = '#ffc107'; historyChart.data.datasets[0].label = 'Шум (dB)';
     } else if (type === 'temp') {
-        historyChart.data.datasets[0].borderColor = '#dc3545';
-        historyChart.data.datasets[0].backgroundColor = 'rgba(220, 53, 69, 0.1)';
-        historyChart.data.datasets[0].pointBackgroundColor = '#dc3545';
-        historyChart.data.datasets[0].label = 'Температура (°C)';
+        historyChart.data.datasets[0].borderColor = '#dc3545'; historyChart.data.datasets[0].backgroundColor = 'rgba(220, 53, 69, 0.1)'; historyChart.data.datasets[0].pointBackgroundColor = '#dc3545'; historyChart.data.datasets[0].label = 'Температура (°C)';
     } else if (type === 'rssi') {
-        historyChart.data.datasets[0].borderColor = '#0dcaf0';
-        historyChart.data.datasets[0].backgroundColor = 'rgba(13, 202, 240, 0.1)';
-        historyChart.data.datasets[0].pointBackgroundColor = '#0dcaf0';
-        historyChart.data.datasets[0].label = 'Мережа RSSI (dBm)';
+        historyChart.data.datasets[0].borderColor = '#0dcaf0'; historyChart.data.datasets[0].backgroundColor = 'rgba(13, 202, 240, 0.1)'; historyChart.data.datasets[0].pointBackgroundColor = '#0dcaf0'; historyChart.data.datasets[0].label = 'Мережа RSSI (dBm)';
     }
     historyChart.update();
 };
+
+// Застосовуємо тему на старті після створення графіків
+applyTheme(currentTheme);
 
 // --- СИСТЕМНА ЛОГІКА ТА АВТОРИЗАЦІЯ ---
 const logConsole = document.getElementById('logConsole');
