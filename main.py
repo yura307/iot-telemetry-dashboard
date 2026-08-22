@@ -1,6 +1,8 @@
 import os
 import random
 import asyncio
+import pyotp
+from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -10,7 +12,6 @@ from pymongo import MongoClient
 
 app = FastAPI(title="Enterprise IoT SCADA Backend")
 
-# Дозволяємо доступ з будь-яких пристроїв
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,10 +25,9 @@ MONGO_URL = os.getenv("MONGO_URL")
 
 if MONGO_URL:
     client = MongoClient(MONGO_URL)
-    db = client["scada_database"] # Назва нашої бази даних
-    users_collection = db["users"] # Назва "таблиці" (колекції)
+    db = client["scada_database"]
+    users_collection = db["users"]
     
-    # Якщо база порожня, створюємо системного адміна
     if not users_collection.find_one({"username": "admin"}):
         users_collection.insert_one({
             "username": "admin",
@@ -48,25 +48,28 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+    tfa_code: Optional[str] = None  # Необов'язковий код для 2FA
 
 class UserProfileUpdate(BaseModel):
     username: str
     name: str
     role: str
 
+class TFAVerify(BaseModel):
+    username: str
+    code: str
+
+class TFADisable(BaseModel):
+    username: str
+
 # --- API РЕЄСТРАЦІЇ ---
 @app.post("/api/register")
 def register_user(data: UserRegister):
-    if not client:
-        raise HTTPException(status_code=500, detail="База даних не підключена")
-
+    if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
     username = data.username.strip()
-    
-    # Перевіряємо, чи є вже такий користувач у MongoDB
     if users_collection.find_one({"username": username}):
         raise HTTPException(status_code=400, detail="Користувач вже існує")
     
-    # Записуємо нового користувача в хмару
     users_collection.insert_one({
         "username": username,
         "pass": data.password,
@@ -76,19 +79,24 @@ def register_user(data: UserRegister):
     })
     return {"status": "success", "message": "Акаунт створено"}
 
-# --- API ВХОДУ ---
+# --- API ВХОДУ (З ПІДТРИМКОЮ 2FA) ---
 @app.post("/api/login")
 def login_user(data: UserLogin):
-    if not client:
-        raise HTTPException(status_code=500, detail="База даних не підключена")
-
+    if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
     username = data.username.strip()
-    
-    # Шукаємо користувача в MongoDB
     user = users_collection.find_one({"username": username})
     
     if not user or user["pass"] != data.password:
         raise HTTPException(status_code=401, detail="Невірний логін або пароль")
+    
+    # Якщо 2FA увімкнено, перевіряємо код
+    if user.get("tfa"):
+        if not data.tfa_code:
+            return {"status": "tfa_required"} # Просимо фронтенд показати поле для коду
+        
+        totp = pyotp.TOTP(user["tfa_secret"])
+        if not totp.verify(data.tfa_code):
+            raise HTTPException(status_code=401, detail="Невірний код 2FA")
     
     return {
         "status": "success",
@@ -101,18 +109,44 @@ def login_user(data: UserLogin):
 # --- API ОНОВЛЕННЯ ПРОФІЛЮ ---
 @app.post("/api/profile")
 def update_profile(data: UserProfileUpdate):
-    if not client:
-        raise HTTPException(status_code=500, detail="База даних не підключена")
-
-    # Оновлюємо дані конкретного користувача
+    if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
     result = users_collection.update_one(
         {"username": data.username},
         {"$set": {"name": data.name, "role": data.role}}
     )
+    if result.matched_count == 0: raise HTTPException(status_code=404, detail="Користувача не знайдено")
+    return {"status": "success"}
+
+# --- API 2FA (ГЕНЕРАЦІЯ, ПІДТВЕРДЖЕННЯ, ВИМКНЕННЯ) ---
+@app.get("/api/2fa/setup")
+def setup_2fa(username: str):
+    if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
+    secret = pyotp.random_base32()
+    # Тимчасово зберігаємо секрет, але 2FA ще не активована (tfa: False)
+    users_collection.update_one({"username": username}, {"$set": {"tfa_secret": secret}})
+    # Генеруємо посилання для Google Authenticator
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(name=username, issuer_name="SCADA_Dashboard")
+    return {"secret": secret, "uri": uri}
+
+@app.post("/api/2fa/verify")
+def verify_2fa(data: TFAVerify):
+    if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
+    user = users_collection.find_one({"username": data.username})
     
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Користувача не знайдено")
-    
+    if not user or "tfa_secret" not in user:
+        raise HTTPException(status_code=400, detail="Немає секретного ключа")
+        
+    totp = pyotp.TOTP(user["tfa_secret"])
+    if totp.verify(data.code):
+        users_collection.update_one({"username": data.username}, {"$set": {"tfa": True}})
+        return {"status": "success"}
+    else:
+        raise HTTPException(status_code=400, detail="Невірний код")
+
+@app.post("/api/2fa/disable")
+def disable_2fa(data: TFADisable):
+    if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
+    users_collection.update_one({"username": data.username}, {"$set": {"tfa": False}})
     return {"status": "success"}
 
 # --- WEBSOCKET ДЛЯ ДАТЧІКІВ ---
@@ -126,18 +160,9 @@ async def websocket_endpoint(websocket: WebSocket):
             sound = 65 + (random.random() * 15)
             temp = 42.0 + (random.random() * 1.5)
             rssi = int(-75 + (random.random() * 15))
-            
-            payload = {
-                "vibro": round(vibro, 1),
-                "sound": round(sound, 1),
-                "temp": round(temp, 1),
-                "rssi": rssi,
-                "timestamp": t
-            }
-            await websocket.send_json(payload)
+            await websocket.send_json({"vibro": round(vibro, 1), "sound": round(sound, 1), "temp": round(temp, 1), "rssi": rssi, "timestamp": t})
             await asyncio.sleep(0.3)
     except WebSocketDisconnect:
         pass
 
-# Роздача статичних файлів HTML/CSS/JS
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
