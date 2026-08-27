@@ -1,6 +1,6 @@
 # Enterprise IoT Telemetry Dashboard (Full-Stack SCADA)
 
-## 🇬🇧 English
+## English
 
 A professional, real-time Full-Stack dashboard designed for monitoring industrial IoT sensors (vibration, acoustics, temperature, network RSSI). This project demonstrates a modern SCADA (Supervisory Control and Data Acquisition) architecture, integrating a Python backend, real-time WebSockets, cloud database, and secure user authentication.
 
@@ -64,7 +64,7 @@ To run this complete Full-Stack environment on your local machine:
 
 ---
 
-## 🇺🇦 Українська
+## Українська
 
 Професійний Full-Stack дашборд реального часу, розроблений для моніторингу промислових IoT-датчиків (вібрація, акустика, температура, мережа RSSI). Цей проєкт демонструє сучасну архітектуру SCADA (Supervisory Control and Data Acquisition), інтегруючи Python-бекенд, WebSockets у реальному часі, хмарну базу даних та безпечну авторизацію користувачів.
 
