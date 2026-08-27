@@ -62,7 +62,6 @@ document.getElementById('toggle-reg-pwd-confirm').addEventListener('click', () =
 document.getElementById('show-register').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('login-section').classList.add('d-none'); document.getElementById('register-section').classList.remove('d-none'); });
 document.getElementById('show-login').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('register-section').classList.add('d-none'); document.getElementById('login-section').classList.remove('d-none'); });
 
-// ПОВЕРНУТО: Перевірка складності пароля та розблокування кнопки
 const regPasswordInput = document.getElementById('reg-password');
 const registerBtn = document.getElementById('register-btn');
 const pwdStrengthContainer = document.getElementById('pwd-strength-container');
@@ -86,7 +85,7 @@ regPasswordInput.addEventListener('input', function() {
     } else {
         pwdStrengthBar.style.width = '100%'; pwdStrengthBar.className = 'progress-bar bg-success';
         pwdStrengthText.innerText = 'Надійний'; pwdStrengthText.className = 'fw-bold text-success';
-        registerBtn.disabled = false; // ОСЬ ЦЕ РОЗБЛОКОВУЄ КНОПКУ
+        registerBtn.disabled = false;
     }
 });
 
@@ -105,10 +104,13 @@ document.getElementById('login-form').addEventListener('submit', async function(
     e.preventDefault();
     const inputUser = document.getElementById('username').value.trim();
     const inputPass = document.getElementById('password').value;
-    const inputTfa = document.getElementById('login-tfa-code').value; 
+    
+    // ТУТ ВАЖЛИВА ЗМІНА: видаляємо всі пробіли з коду перед логіном
+    let inputTfa = document.getElementById('login-tfa-code').value; 
+    inputTfa = inputTfa ? inputTfa.replace(/\s/g, '') : null;
 
     try {
-        const response = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: inputUser, password: inputPass, tfa_code: inputTfa || null }) });
+        const response = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: inputUser, password: inputPass, tfa_code: inputTfa }) });
         const result = await response.json();
         
         if (!response.ok) throw new Error(result.detail || 'Помилка входу');
@@ -152,10 +154,17 @@ tfaSwitch.addEventListener('change', async (e) => {
     tfaSuccessMsg.classList.add('d-none'); tfaErrorMsg.classList.add('d-none');
     
     if(e.target.checked) {
-        const res = await fetch(`/api/2fa/setup?username=${activeUser}`);
-        const data = await res.json();
-        tfaQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.uri)}`;
-        tfaSetupBlock.classList.remove('d-none');
+        try {
+            const res = await fetch(`/api/2fa/setup?username=${encodeURIComponent(activeUser)}`);
+            if (!res.ok) throw new Error("Помилка генерації ключа");
+            const data = await res.json();
+            
+            tfaQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.uri)}`;
+            tfaSetupBlock.classList.remove('d-none');
+        } catch (err) {
+            console.error(err);
+            e.target.checked = false;
+        }
     } else {
         await fetch('/api/2fa/disable', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username: activeUser}) });
         tfaSetupBlock.classList.add('d-none');
@@ -163,7 +172,8 @@ tfaSwitch.addEventListener('change', async (e) => {
 });
 
 document.getElementById('tfa-verify-btn').addEventListener('click', async () => {
-    const code = document.getElementById('tfa-code-input').value;
+    // ТУТ ВАЖЛИВА ЗМІНА: видаляємо всі пробіли перед відправкою перевірки
+    const code = document.getElementById('tfa-code-input').value.replace(/\s/g, '');
     try {
         const res = await fetch('/api/2fa/verify', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username: activeUser, code: code}) });
         if(res.ok) {
