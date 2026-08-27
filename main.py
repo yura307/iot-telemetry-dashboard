@@ -20,7 +20,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- ПІДКЛЮЧЕННЯ ДО MONGODB ---
 MONGO_URL = os.getenv("MONGO_URL")
 
 if MONGO_URL:
@@ -38,9 +37,7 @@ if MONGO_URL:
         })
 else:
     client = None
-    print("УВАГА: MONGO_URL не знайдено в налаштуваннях!")
 
-# --- МОДЕЛІ ДАНИХ ---
 class UserRegister(BaseModel):
     username: str
     password: str
@@ -48,7 +45,7 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
-    tfa_code: Optional[str] = None  # Необов'язковий код для 2FA
+    tfa_code: Optional[str] = None
 
 class UserProfileUpdate(BaseModel):
     username: str
@@ -62,7 +59,6 @@ class TFAVerify(BaseModel):
 class TFADisable(BaseModel):
     username: str
 
-# --- API РЕЄСТРАЦІЇ ---
 @app.post("/api/register")
 def register_user(data: UserRegister):
     if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
@@ -77,9 +73,8 @@ def register_user(data: UserRegister):
         "role": "Черговий оператор",
         "tfa": False
     })
-    return {"status": "success", "message": "Акаунт створено"}
+    return {"status": "success"}
 
-# --- API ВХОДУ (З ПІДТРИМКОЮ 2FA) ---
 @app.post("/api/login")
 def login_user(data: UserLogin):
     if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
@@ -89,13 +84,13 @@ def login_user(data: UserLogin):
     if not user or user["pass"] != data.password:
         raise HTTPException(status_code=401, detail="Невірний логін або пароль")
     
-    # Якщо 2FA увімкнено, перевіряємо код
     if user.get("tfa"):
         if not data.tfa_code:
-            return {"status": "tfa_required"} # Просимо фронтенд показати поле для коду
+            return {"status": "tfa_required"}
         
         totp = pyotp.TOTP(user["tfa_secret"])
-        if not totp.verify(data.tfa_code):
+        # ТУТ ДОДАНО valid_window=2 (сервер прощає розсинхрон часу ±1 хв)
+        if not totp.verify(data.tfa_code, valid_window=2):
             raise HTTPException(status_code=401, detail="Невірний код 2FA")
     
     return {
@@ -106,7 +101,6 @@ def login_user(data: UserLogin):
         "tfa": user.get("tfa", False)
     }
 
-# --- API ОНОВЛЕННЯ ПРОФІЛЮ ---
 @app.post("/api/profile")
 def update_profile(data: UserProfileUpdate):
     if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
@@ -117,15 +111,14 @@ def update_profile(data: UserProfileUpdate):
     if result.matched_count == 0: raise HTTPException(status_code=404, detail="Користувача не знайдено")
     return {"status": "success"}
 
-# --- API 2FA (ГЕНЕРАЦІЯ, ПІДТВЕРДЖЕННЯ, ВИМКНЕННЯ) ---
 @app.get("/api/2fa/setup")
 def setup_2fa(username: str):
     if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
     secret = pyotp.random_base32()
-    # Тимчасово зберігаємо секрет, але 2FA ще не активована (tfa: False)
     users_collection.update_one({"username": username}, {"$set": {"tfa_secret": secret}})
-    # Генеруємо посилання для Google Authenticator
-    uri = pyotp.totp.TOTP(secret).provisioning_uri(name=username, issuer_name="SCADA_Dashboard")
+    
+    # ТУТ ЗМІНЕНО: Прибрали номер телефону. Тепер назва стандартизована.
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(name="Operator", issuer_name="SCADA System")
     return {"secret": secret, "uri": uri}
 
 @app.post("/api/2fa/verify")
@@ -137,7 +130,8 @@ def verify_2fa(data: TFAVerify):
         raise HTTPException(status_code=400, detail="Немає секретного ключа")
         
     totp = pyotp.TOTP(user["tfa_secret"])
-    if totp.verify(data.code):
+    # ТУТ ДОДАНО valid_window=2 (сервер прощає розсинхрон часу ±1 хв)
+    if totp.verify(data.code, valid_window=2):
         users_collection.update_one({"username": data.username}, {"$set": {"tfa": True}})
         return {"status": "success"}
     else:
@@ -149,7 +143,6 @@ def disable_2fa(data: TFADisable):
     users_collection.update_one({"username": data.username}, {"$set": {"tfa": False}})
     return {"status": "success"}
 
-# --- WEBSOCKET ДЛЯ ДАТЧІКІВ ---
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
