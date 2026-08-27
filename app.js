@@ -104,24 +104,12 @@ document.getElementById('login-form').addEventListener('submit', async function(
     e.preventDefault();
     const inputUser = document.getElementById('username').value.trim();
     const inputPass = document.getElementById('password').value;
-    
-    // ТУТ ВАЖЛИВА ЗМІНА: видаляємо всі пробіли з коду перед логіном
-    let inputTfa = document.getElementById('login-tfa-code').value; 
-    inputTfa = inputTfa ? inputTfa.replace(/\s/g, '') : null;
 
     try {
-        const response = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: inputUser, password: inputPass, tfa_code: inputTfa }) });
+        const response = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: inputUser, password: inputPass }) });
         const result = await response.json();
         
         if (!response.ok) throw new Error(result.detail || 'Помилка входу');
-
-        if (result.status === "tfa_required") {
-            document.getElementById('login-tfa-block').classList.remove('d-none');
-            document.getElementById('login-error').classList.add('d-none');
-            document.getElementById('login-btn').className = 'btn w-100 py-2 fw-bold mb-3 btn-warning';
-            document.getElementById('login-text').innerText = 'ПІДТВЕРДИТИ 2FA';
-            return; 
-        }
 
         activeUser = result.username;
         document.getElementById('nav-username').innerText = result.name;
@@ -129,9 +117,6 @@ document.getElementById('login-form').addEventListener('submit', async function(
         document.getElementById('profile-name').value = result.name === activeUser ? '' : result.name;
         document.getElementById('profile-role').value = result.role;
         
-        document.getElementById('tfa-switch').checked = result.tfa;
-        if(result.tfa) document.getElementById('tfa-setup-block').classList.add('d-none');
-
         document.getElementById('user-profile-menu').classList.remove('d-none'); document.getElementById('user-profile-menu').classList.add('d-flex');
         document.getElementById('login-overlay').classList.add('hidden'); setTimeout(() => document.getElementById('login-overlay').style.display = 'none', 600);
         startWebSocket();
@@ -142,48 +127,6 @@ document.getElementById('login-form').addEventListener('submit', async function(
 });
 
 document.getElementById('logout-btn').addEventListener('click', () => location.reload());
-
-// --- ЛОГІКА НАЛАШТУВАННЯ 2FA В ПРОФІЛІ ---
-const tfaSwitch = document.getElementById('tfa-switch');
-const tfaSetupBlock = document.getElementById('tfa-setup-block');
-const tfaQrImage = document.getElementById('tfa-qr-image');
-const tfaSuccessMsg = document.getElementById('tfa-success-msg');
-const tfaErrorMsg = document.getElementById('tfa-error-msg');
-
-tfaSwitch.addEventListener('change', async (e) => {
-    tfaSuccessMsg.classList.add('d-none'); tfaErrorMsg.classList.add('d-none');
-    
-    if(e.target.checked) {
-        try {
-            const res = await fetch(`/api/2fa/setup?username=${encodeURIComponent(activeUser)}`);
-            if (!res.ok) throw new Error("Помилка генерації ключа");
-            const data = await res.json();
-            
-            tfaQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.uri)}`;
-            tfaSetupBlock.classList.remove('d-none');
-        } catch (err) {
-            console.error(err);
-            e.target.checked = false;
-        }
-    } else {
-        await fetch('/api/2fa/disable', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username: activeUser}) });
-        tfaSetupBlock.classList.add('d-none');
-    }
-});
-
-document.getElementById('tfa-verify-btn').addEventListener('click', async () => {
-    // ТУТ ВАЖЛИВА ЗМІНА: видаляємо всі пробіли перед відправкою перевірки
-    const code = document.getElementById('tfa-code-input').value.replace(/\s/g, '');
-    try {
-        const res = await fetch('/api/2fa/verify', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username: activeUser, code: code}) });
-        if(res.ok) {
-            tfaSuccessMsg.classList.remove('d-none'); tfaErrorMsg.classList.add('d-none');
-            setTimeout(() => tfaSetupBlock.classList.add('d-none'), 2000); 
-        } else {
-            tfaErrorMsg.classList.remove('d-none'); tfaSuccessMsg.classList.add('d-none');
-        }
-    } catch(e) { console.error(e); }
-});
 
 // --- ЗБЕРЕЖЕННЯ ПРОФІЛЮ ---
 document.getElementById('profile-details-form').addEventListener('submit', async function(e) {
