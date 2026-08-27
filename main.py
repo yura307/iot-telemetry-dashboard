@@ -1,8 +1,6 @@
 import os
 import random
 import asyncio
-import pyotp
-from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -32,8 +30,7 @@ if MONGO_URL:
             "username": "admin",
             "pass": "admin",
             "name": "Системний Admin",
-            "role": "Головний інженер",
-            "tfa": False
+            "role": "Головний інженер"
         })
 else:
     client = None
@@ -45,19 +42,11 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
-    tfa_code: Optional[str] = None
 
 class UserProfileUpdate(BaseModel):
     username: str
     name: str
     role: str
-
-class TFAVerify(BaseModel):
-    username: str
-    code: str
-
-class TFADisable(BaseModel):
-    username: str
 
 @app.post("/api/register")
 def register_user(data: UserRegister):
@@ -70,8 +59,7 @@ def register_user(data: UserRegister):
         "username": username,
         "pass": data.password,
         "name": "",
-        "role": "Черговий оператор",
-        "tfa": False
+        "role": "Черговий оператор"
     })
     return {"status": "success"}
 
@@ -84,21 +72,11 @@ def login_user(data: UserLogin):
     if not user or user["pass"] != data.password:
         raise HTTPException(status_code=401, detail="Невірний логін або пароль")
     
-    if user.get("tfa"):
-        if not data.tfa_code:
-            return {"status": "tfa_required"}
-        
-        totp = pyotp.TOTP(user["tfa_secret"])
-        # ТУТ ДОДАНО valid_window=2 (сервер прощає розсинхрон часу ±1 хв)
-        if not totp.verify(data.tfa_code, valid_window=2):
-            raise HTTPException(status_code=401, detail="Невірний код 2FA")
-    
     return {
         "status": "success",
         "username": username,
         "name": user.get("name", username) or username,
-        "role": user.get("role", "Черговий оператор"),
-        "tfa": user.get("tfa", False)
+        "role": user.get("role", "Черговий оператор")
     }
 
 @app.post("/api/profile")
@@ -109,38 +87,6 @@ def update_profile(data: UserProfileUpdate):
         {"$set": {"name": data.name, "role": data.role}}
     )
     if result.matched_count == 0: raise HTTPException(status_code=404, detail="Користувача не знайдено")
-    return {"status": "success"}
-
-@app.get("/api/2fa/setup")
-def setup_2fa(username: str):
-    if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
-    secret = pyotp.random_base32()
-    users_collection.update_one({"username": username}, {"$set": {"tfa_secret": secret}})
-    
-    # ТУТ ЗМІНЕНО: Прибрали номер телефону. Тепер назва стандартизована.
-    uri = pyotp.totp.TOTP(secret).provisioning_uri(name="Operator", issuer_name="SCADA System")
-    return {"secret": secret, "uri": uri}
-
-@app.post("/api/2fa/verify")
-def verify_2fa(data: TFAVerify):
-    if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
-    user = users_collection.find_one({"username": data.username})
-    
-    if not user or "tfa_secret" not in user:
-        raise HTTPException(status_code=400, detail="Немає секретного ключа")
-        
-    totp = pyotp.TOTP(user["tfa_secret"])
-    # ТУТ ДОДАНО valid_window=2 (сервер прощає розсинхрон часу ±1 хв)
-    if totp.verify(data.code, valid_window=2):
-        users_collection.update_one({"username": data.username}, {"$set": {"tfa": True}})
-        return {"status": "success"}
-    else:
-        raise HTTPException(status_code=400, detail="Невірний код")
-
-@app.post("/api/2fa/disable")
-def disable_2fa(data: TFADisable):
-    if not client: raise HTTPException(status_code=500, detail="База даних не підключена")
-    users_collection.update_one({"username": data.username}, {"$set": {"tfa": False}})
     return {"status": "success"}
 
 @app.websocket("/ws")
