@@ -1,33 +1,41 @@
-# Enterprise IoT Telemetry Dashboard (SCADA Prototype)
+# Enterprise IoT Telemetry Dashboard (Full-Stack SCADA)
 
-A professional, real-time frontend dashboard designed for monitoring industrial IoT sensors (vibration, acoustics, temperature). This project serves as a high-fidelity prototype demonstrating modern SCADA (Supervisory Control and Data Acquisition) interface design, client-side state management, and real-time data visualization.
+A professional, real-time Full-Stack dashboard designed for monitoring industrial IoT sensors (vibration, acoustics, temperature, network RSSI). This project demonstrates a modern SCADA (Supervisory Control and Data Acquisition) architecture, integrating a Python backend, real-time WebSockets, cloud database, and enterprise-grade security.
 
 ## Live Demo
-https://yura307.github.io/iot-telemetry-dashboard/
+**[Launch Live Dashboard](https://iot-telemetry-dashboard-2.onrender.com)** 
+*(Hosted on Render. The initial load might take 30-50 seconds as the free-tier server spins up).*
 
 ## Key Features
 
-* **Real-Time Data Simulation:** Includes a custom built-in JavaScript engine that simulates high-frequency hardware telemetry (vibration harmonics and acoustic noise) without needing a physical backend.
-* **Interactive Data Visualization:** Utilizes `Chart.js` for rendering smooth, real-time line charts (amplitude) and bar charts (frequency spectrum).
-* **Advanced Auth System (Mock):** 
-  * Fully functional UI for Login and Registration.
-  * Real-time **password strength validation** (regex-based complexity scoring with visual progress bar).
-  * State persistence using browser `localStorage` to simulate backend session management.
-* **Critical Alerts Engine:** Dynamic threshold monitoring. If vibration exceeds a critical limit (75.0 mm/s), the UI triggers visual alarms and logs the event.
-* **Industrial UI/UX (Dark Mode):** Built with Bootstrap 5, featuring a dark-themed, high-contrast interface typical of enterprise control rooms.
-* **WebSocket Terminal Log:** A simulated live terminal displaying incoming data payloads and system authorization events.
+* **Real-Time Data Streaming:** Utilizes WebSockets via FastAPI backend to stream high-frequency hardware telemetry directly to the client without HTTP overhead.
+* **Cloud Database Persistence:** Integrated with **MongoDB Atlas** for secure, permanent storage of user accounts, roles, and profile settings.
+* **Enterprise Security (2FA):** 
+  * Fully functional User Authentication system.
+  * Real-time **password strength validation** (regex-based complexity scoring).
+  * **Two-Factor Authentication (2FA)** implemented via `pyotp`. Generates unique secure keys and dynamic QR codes for Google Authenticator/Authy integration.
+* **Interactive Data Visualization:** Utilizes `Chart.js` for rendering smooth, real-time line charts (amplitude) and frequency spectrum bars.
+* **Hardware Integration Ready:** The backend is structured to accept live data payloads from microcontrollers (e.g., ESP32/ESP8266 reading BME280 or vibration sensors) instead of simulated data.
+* **Industrial UI/UX:** Built with Bootstrap 5, featuring a dark-themed, high-contrast interface typical of enterprise control rooms with real-time critical alert threshold logic.
 
 ## Tech Stack
 
-* **Structure & Styling:** HTML5, CSS3, Bootstrap 5
-* **Logic & State:** Vanilla JavaScript (ES6+), `localStorage` API
-* **Charting:** Chart.js
-* **Icons:** Bootstrap Icons
+**Backend:**
+* Python 3.10+
+* FastAPI & Uvicorn (REST API & WebSockets)
+* PyMongo (MongoDB Cloud Integration)
+* PyOTP (Cryptographic 2FA)
+
+**Frontend:**
+* HTML5, CSS3, Bootstrap 5
+* Vanilla JavaScript (ES6+)
+* Chart.js (Real-time graphing)
 
 ## How to Run Locally
 
-This is a dependency-free static project. No `npm install` or backend server is required for the simulation.
+To run this complete Full-Stack environment on your local machine:
 
-1. Clone the repository:
+1. **Clone the repository:**
    ```bash
    git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
+   cd your-repo-name
