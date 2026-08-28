@@ -1,6 +1,7 @@
 import os
 import random
 import asyncio
+import math
 import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,7 +48,6 @@ def answer_telegram_callback(callback_query_id, text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/answerCallbackQuery"
     requests.post(url, json={"callback_query_id": callback_query_id, "text": text, "show_alert": True})
 
-# --- ПРИЙМАЧ КОМАНД ВІД TELEGRAM (WEBHOOK) ---
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
     data = await request.json()
@@ -57,15 +57,11 @@ async def telegram_webhook(request: Request):
         action = data["callback_query"]["data"]
         
         if action == "stop_machine":
-            print("!!! КОМАНДА З TELEGRAM: Аварійна зупинка обладнання !!!")
             answer_telegram_callback(callback_id, "Команду прийнято! Живлення вимкнено.")
-            
         elif action == "ack_alarm":
-            print("!!! КОМАНДА З TELEGRAM: Тривогу підтверджено оператором !!!")
             answer_telegram_callback(callback_id, "Тривогу підтверджено. Черговий проінформований.")
             
     return {"status": "ok"}
-# ----------------------------------------------
 
 MONGO_URL = os.getenv("MONGO_URL")
 
@@ -116,10 +112,19 @@ async def websocket_endpoint(websocket: WebSocket):
     
     try:
         while True:
-            vibro = abs(random.gauss(30, 5) if random.random() > 0.1 else random.uniform(50, 85))
-            sound = 65 + (random.random() * 15)
-            temp = 42.0 + (random.random() * 1.5)
-            rssi = int(-75 + (random.random() * 15))
+            # Плавна зміна базового навантаження за допомогою синусоїди
+            base_vibro = 30.0 + (math.sin(t * 0.5) * 10)
+            
+            # 97% часу - плавна робота, 3% - раптова аномалія
+            if random.random() > 0.03:
+                vibro = base_vibro + random.gauss(0, 1.5)  # Плавна лінія + легке тремтіння
+                sound = 65.0 + (math.cos(t * 0.3) * 5) + random.gauss(0, 1)
+            else:
+                vibro = random.uniform(76.0, 85.0)  # Стрибок для тривоги в Telegram
+                sound = random.uniform(85.0, 95.0)
+
+            temp = 42.0 + (math.sin(t * 0.1) * 2.0)
+            rssi = int(-75 + (math.cos(t * 0.2) * 5.0))
             
             if vibro > 75 and not alert_active:
                 alert_active = True
@@ -130,8 +135,9 @@ async def websocket_endpoint(websocket: WebSocket):
 
             await websocket.send_json({"vibro": round(vibro, 1), "sound": round(sound, 1), "temp": round(temp, 1), "rssi": rssi, "timestamp": t})
             
-            # Збільшена затримка для повільнішого оновлення графіка
-            await asyncio.sleep(2.0)
+            t += 0.1
+            # Часті оновлення (кожні 0.15с) для безперервної анімації графіків
+            await asyncio.sleep(0.15)
     except WebSocketDisconnect:
         pass
 
