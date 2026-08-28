@@ -44,7 +44,6 @@ def send_telegram_alert(message_text):
         print(f"Помилка відправки в TG: {e}")
 
 def answer_telegram_callback(callback_query_id, text):
-    """Функція, щоб кнопка в Телеграмі перестала 'крутитися' після натискання"""
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/answerCallbackQuery"
     requests.post(url, json={"callback_query_id": callback_query_id, "text": text, "show_alert": True})
 
@@ -53,13 +52,11 @@ def answer_telegram_callback(callback_query_id, text):
 async def telegram_webhook(request: Request):
     data = await request.json()
     
-    # Якщо прийшло натискання на кнопку (callback_query)
     if "callback_query" in data:
         callback_id = data["callback_query"]["id"]
         action = data["callback_query"]["data"]
         
         if action == "stop_machine":
-            # Тут у майбутньому можна додати відправку команди на ESP32/реле
             print("!!! КОМАНДА З TELEGRAM: Аварійна зупинка обладнання !!!")
             answer_telegram_callback(callback_id, "Команду прийнято! Живлення вимкнено.")
             
@@ -132,7 +129,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 alert_active = False 
 
             await websocket.send_json({"vibro": round(vibro, 1), "sound": round(sound, 1), "temp": round(temp, 1), "rssi": rssi, "timestamp": t})
-            await asyncio.sleep(0.3)
+            
+            # Збільшена затримка для повільнішого оновлення графіка
+            await asyncio.sleep(2.0)
     except WebSocketDisconnect:
         pass
 
